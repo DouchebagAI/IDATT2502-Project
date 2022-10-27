@@ -13,6 +13,7 @@ go_env = gym.make('gym_go:go-v0', size=args.boardsize, komi=args.komi)
 
 # Game loop
 done = False
+go_env.reset()
 while not done:
     action = go_env.render(mode="human")
     state, reward, done, info = go_env.step(action)

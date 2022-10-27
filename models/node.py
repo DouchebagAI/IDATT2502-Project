@@ -1,3 +1,4 @@
+import numpy as np
 class Node:
     def __init__(self, v= 0, n = 0, N = 0, C = 0.1):
         # state = node
@@ -11,5 +12,7 @@ class Node:
         # Konstant for å tweake treet
         self.C = C
 
+    def get_value(self):
+        return self.v + self.C * np.sqrt(np.log(self.N)/self.n)
     
         

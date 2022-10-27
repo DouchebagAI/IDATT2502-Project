@@ -1,6 +1,3 @@
-
-
-
 from models.node import Node
 
 class MCTS:
@@ -8,7 +5,12 @@ class MCTS:
     def __init__(self, env):
         self.env = env
         self.R = Node()
-    
+
+    def monte_carlo_tree_search(self):
+        pass
+
+    def traverse(self, node: Node):
+
     # # main function for the Monte Carlo Tree Search
     # def monte_carlo_tree_search(root):
     #     while resources_left(time, computational power):
