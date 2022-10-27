@@ -1,6 +1,6 @@
 import numpy as np
 class Node:
-    def __init__(self, v= 0, n = 0, N = 0, C = 0.1):
+    def __init__(self, num_of_actions, parent, v= 0, n = 0, N = 0, C = 0.95):
         # state = node
         # Verdien til staten
         self.v = v
@@ -11,8 +11,13 @@ class Node:
         self.N = N
         # Konstant for å tweake treet
         self.C = C
+        # Parent til noden
+        self.parent = parent
+        # Children
+        self.children = np.empty(num_of_actions, dtype=Node)
 
+    # Formel for å hente verdien til noden (til valg av node i neste)
     def get_value(self):
-        return self.v + self.C * np.sqrt(np.log(self.N)/self.n)
+        return self.v/self.n + self.C * np.sqrt(np.log(self.N)/self.n)
     
         

@@ -5,13 +5,31 @@ class MCTS:
     def __init__(self, env):
         self.env = env
         self.R = Node()
+        self.currentNode = self.R
 
     def monte_carlo_tree_search(self):
+        while(True):
+            self.traverse(self.R)
         pass
 
     def traverse(self, node: Node):
+        pass
 
-    # # main function for the Monte Carlo Tree Search
+    def rollout_policy(self):
+        # Finn tilfeldig action ved å ta fra enviroment
+        # Ta denne
+        pass
+
+
+
+
+    def backpropagate(node, result):
+        if is_root(node): return
+        node.stats = update_stats(node, result)
+        backpropagate(node.parent)
+
+    
+    # main function for the Monte Carlo Tree Search
     # def monte_carlo_tree_search(root):
     #     while resources_left(time, computational power):
     #         leaf = traverse(root)
