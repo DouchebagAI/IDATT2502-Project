@@ -1,5 +1,6 @@
 from models.node import Node
 from operator import attrgetter
+import numpy as np
 class MCTS:
 
     def __init__(self, env):
@@ -16,9 +17,7 @@ class MCTS:
         pass
 
     def rollout_policy(self):
-        # Finn tilfeldig action ved å ta fra enviroment
-        # Ta denne
-        pass
+       return np.random.randint(0, 51)
 
     # Finner det barnet med høyest value
     def best_child(self):
@@ -31,12 +30,14 @@ class MCTS:
         return self.currentNode.children[index]
 
 
-    def backpropagate(node, result):
-        #if is_root(node): return
+    def backpropagate(self, node, result):
+        if node.is_root(node): return
         #node.stats = update_stats(node, result)
         #backpropagate(node.parent)
         pass
-    
+
+
+
     # main function for the Monte Carlo Tree Search
     # def monte_carlo_tree_search(root):
     #     while resources_left(time, computational power):

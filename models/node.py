@@ -19,5 +19,7 @@ class Node:
     # Formel for å hente verdien til noden (til valg av node i neste)
     def get_value(self):
         return self.v/self.n + self.C * np.sqrt(np.log(self.N)/self.n)
-    
+
+    def is_root(self):
+        return self.parent is None
         
