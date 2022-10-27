@@ -1,5 +1,5 @@
 from models.node import Node
-
+from operator import attrgetter
 class MCTS:
 
     def __init__(self, env):
@@ -20,14 +20,22 @@ class MCTS:
         # Ta denne
         pass
 
+    # Finner det barnet med høyest value
+    def best_child(self):
+        index = -1
 
+        for i, item in enumerate(self.currentNode.children):
+            if index != -1 and item.get_value() > self.currentNode.children[index].get_value():
+                index = i
+
+        return self.currentNode.children[index]
 
 
     def backpropagate(node, result):
-        if is_root(node): return
-        node.stats = update_stats(node, result)
-        backpropagate(node.parent)
-
+        #if is_root(node): return
+        #node.stats = update_stats(node, result)
+        #backpropagate(node.parent)
+        pass
     
     # main function for the Monte Carlo Tree Search
     # def monte_carlo_tree_search(root):

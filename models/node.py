@@ -14,7 +14,7 @@ class Node:
         # Parent til noden
         self.parent = parent
         # Children
-        self.children = np.empty(num_of_actions, dtype=Node)
+        self.children = [None] * num_of_actions
 
     # Formel for å hente verdien til noden (til valg av node i neste)
     def get_value(self):
