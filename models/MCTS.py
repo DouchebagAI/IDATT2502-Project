@@ -47,11 +47,11 @@ class MCTS:
     # If not, create a new child with a random action
     def traverse_step(self, node: Node, render=False):
         if len(node.children) != 0:
-            node = node.best_child()
+            new_node = node.best_child()
             state, reward, done, info = self.env.step(node.action)
             if render:
                 self.env.render('terminal')
-            return node
+            return new_node
 
         new_node = Node(node, self.rollout_policy())
         node.children.update({(new_node.action,new_node)})
@@ -71,9 +71,9 @@ class MCTS:
     def rollout_step(self, node):
         action = self.rollout_policy()
         new_node = Node(node, action)
-        node.children.update({(new_node.action,new_node)})
-        node = new_node
-        self.env.step(node.action)
+        node.children.update({(action,new_node)})
+        self.env.step(new_node.action)
+        return new_node
 
     def rollout_policy(self):
         return self.env.uniform_random_action()
@@ -87,7 +87,7 @@ class MCTS:
         if node.is_root():
             self.currentNode = node
             return
-        node.stats = node.update_node(v)
+        node.update_node(v)
         self.backpropagate(node.parent, v)
 
     # Pics or creates a new child node based on opponents turn
@@ -95,7 +95,7 @@ class MCTS:
         if action in self.currentNode.children.keys():
             self.currentNode = self.currentNode.children[action]
         else:
-            new_node = Node(self.currentNode, self.rollout_policy())
+            new_node = Node(self.currentNode, action)
             self.currentNode.children.update({(new_node.action,new_node)})
             self.currentNode = new_node
 
@@ -104,14 +104,15 @@ class MCTS:
         if self.stage == Stage.UNDEFINED:
             self.stage = Stage.TRAVERSE
             self.currentNode = self.traverse_step(self.currentNode, render)
-        if self.stage == Stage.TRAVERSE:
+        elif self.stage == Stage.TRAVERSE:
             # Changes state from traverse to rollout if no more children
             if len(self.currentNode.children) == 0:
-                self.rollout_step(self.currentNode)
+                self.currentNode = self.rollout_step(self.currentNode)
                 self.stage = Stage.ROLLOUT
             else:
                 self.currentNode = self.traverse_step(self.currentNode, render)
-        if self.stage == Stage.ROLLOUT:
-            self.rollout_step(self.currentNode)
+        elif self.stage == Stage.ROLLOUT:
+            self.currentNode = self.rollout_step(self.currentNode)
 
-        return self.is_terminal()
+        return self.currentNode.action
+

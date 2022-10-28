@@ -1,6 +1,6 @@
 import numpy as np
 class Node:
-    def __init__(self, parent, action, v= 0, n = 0, N = 0, C = 0.95):
+    def __init__(self, parent, action, v= 0, n = 0, C = 0.95):
         # state = node
         #Action til noden
         self.action = action
@@ -13,16 +13,20 @@ class Node:
         # Parent til noden
         self.parent = parent
         # Totalt antall besøk for parent
-        if self.is_root():
-            self.N = N
-        else:
-            self.N = parent.n
+
         # Children
         self.children = {}
 
     # Formel for å hente verdien til noden (til valg av node i neste)
     def get_value(self):
-        return self.v/self.n + self.C * np.sqrt(np.log(self.N)/self.n)
+        return self.v/self.n + self.C * np.sqrt(np.log(self.getN())/self.n)
+
+    # Gets parents n's
+    def getN(self):
+        if self.is_root():
+            return 0
+        else:
+            return self.parent.n
 
     def is_root(self):
         return self.parent is None
@@ -31,6 +35,12 @@ class Node:
     def update_node(self, v):
         self.n += 1
         self.v = v
+
+    def print_self(self):
+
+        for i in self.children.values():
+            print(" - " + str(i.print_self()))
+        return self.action
 
     # Finner det barnet med høyest value
     # None hvis ingen barn
