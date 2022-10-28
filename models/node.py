@@ -1,3 +1,5 @@
+import json
+
 import numpy as np
 class Node:
     def __init__(self, parent, action, v= 0, n = 0, C = 0.95):
@@ -50,7 +52,7 @@ class Node:
 
         index = -1
         for i, item in enumerate(self.children.values()):
-            if index != -1 and item.get_value() > self.children[index].get_value():
-                index = i
+            if index == -1 or item.get_value() > self.children[index].get_value():
+                index = item.action
 
         return self.children[index]
