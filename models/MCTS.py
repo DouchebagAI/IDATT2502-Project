@@ -5,6 +5,7 @@ import numpy as np
 from enum import Enum
 
 # Different stages for what step to do
+
 class Stage(Enum):
     UNDEFINED = 0
     TRAVERSE = 1
@@ -13,25 +14,25 @@ class Stage(Enum):
 
 class MCTS:
     # Inits a MCTS
-    def __init__(self, env):
+    def __init__(self, env, y=1):
         self.stage = Stage.UNDEFINED
         self.env = env
         self.R = Node(None, None)
         self.currentNode = self.R
+        self.y = y
 
     def monte_carlo_tree_search(self, x=100, render=False):
         for i in range(x):
-            print(i)
             self.env.reset()
             leaf = self.traverse(self.currentNode, render)
             simulation_result = self.rollout(leaf)
             self.backpropagate(leaf, simulation_result)
-        return self.R.best_child()
+        return self.R.best_child(self.y)
 
     def traverse(self, node: Node, render=False):
         done = False
         while len(node.children) != 0 and not done:
-            node = node.best_child()
+            node = node.best_child(self.y)
             state, reward, done, info = self.env.step(node.action)
             if done:
                 print("Hello")
@@ -47,14 +48,14 @@ class MCTS:
     # If not, create a new child with a random action
     def traverse_step(self, node: Node, render=False):
         if len(node.children) != 0:
-            new_node = node.best_child()
+            new_node = node.best_child(self.y)
             state, reward, done, info = self.env.step(node.action)
             if render:
                 self.env.render('terminal')
             return new_node
 
         new_node = Node(node, self.rollout_policy())
-        node.children.update({(new_node.action,new_node)})
+        node.children.update({(new_node.action, new_node)})
         return new_node
 
 
@@ -85,6 +86,7 @@ class MCTS:
     # Updates the node values
     def backpropagate(self, node, v):
         if node.is_root():
+            node.update_node(v)
             self.currentNode = node
             return
         node.update_node(v)

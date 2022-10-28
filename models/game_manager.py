@@ -16,9 +16,8 @@ class GameManager:
         black_w = 0
         white_w = 0
         tie = 0
+
         for i in range(x):
-            if i % 10 == 0:
-                print(f"{i / 10} %")
             self.env.reset()
             # Plays until game ends
             while not self.env.game_ended():
@@ -35,13 +34,16 @@ class GameManager:
 
             if self.env.winner() == 1:
                 black_w += 1
+
             elif self.env.winner() == -1:
                 white_w += 1
+
             else:
                 tie += 1
+
             # self.env.render('terminal')
             self.black.backpropagate(self.black.currentNode, self.env.winner())
-            self.white.backpropagate(self.white.currentNode, self.env.winner() * (-1))
+            self.white.backpropagate(self.white.currentNode, self.env.winner() * -1)
 
         # print(self.black.R.print_self())
         # print(self.white.R.print_self())
