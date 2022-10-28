@@ -1,77 +1,52 @@
 from models.node import Node
 from operator import attrgetter
 import numpy as np
+
+
 class MCTS:
 
     def __init__(self, env):
         self.env = env
-        self.R = Node()
+        self.R = Node(None, None)
         self.currentNode = self.R
 
-    def monte_carlo_tree_search(self):
-        while(True):
-            self.traverse(self.R)
-        pass
+    def monte_carlo_tree_search(self, x=1000, render=False):
+        for i in range(x):
+            leaf = self.traverse(self.R, render)
+            simulation_result = self.rollout(leaf)
+            self.backpropagate(leaf, simulation_result)
+        return self.R.best_child()
 
-    def traverse(self, node: Node):
-        pass
+    def traverse(self, node: Node, render=False):
+        done = False
+        while len(node.children) != 0 and not done:
+            node = node.best_child()
+            state, reward, done, info = self.env.step(node.action)
+            if done:
+                print("Hello")
+            if render:
+                self.env.render('terminal')
+
+        new_node = Node(node, self.rollout_policy())
+        node.children.append(new_node)
+        return new_node
+
+    def rollout(self, node):
+        while not self.is_terminal():
+            action = self.rollout_policy()
+            new_node = Node(node, action)
+            node.children.append(new_node)
+            node = new_node
+            self.env.step(node.action)
+        return self.env.reward()
 
     def rollout_policy(self):
-       return np.random.randint(0, 51)
+        return self.env.uniform_random_action()
 
-    # Finner det barnet med høyest value
-    def best_child(self):
-        index = -1
+    def is_terminal(self):
+        return self.env.game_ended()
 
-        for i, item in enumerate(self.currentNode.children):
-            if index != -1 and item.get_value() > self.currentNode.children[index].get_value():
-                index = i
-
-        return self.currentNode.children[index]
-
-
-    def backpropagate(self, node, result):
-        if node.is_root(node): return
-        #node.stats = update_stats(node, result)
-        #backpropagate(node.parent)
-        pass
-
-
-
-    # main function for the Monte Carlo Tree Search
-    # def monte_carlo_tree_search(root):
-    #     while resources_left(time, computational power):
-    #         leaf = traverse(root)
-    #         simulation_result = rollout(leaf)
-    #         backpropagate(leaf, simulation_result)
-            
-    #     return best_child(root)
-
-    # # function for node traversal
-    # def traverse(node):
-    #     while fully_expanded(node):
-    #         node = best_uct(node)
-            
-    #     # in case no children are present / node is terminal
-    #     return pick_unvisited(node.children) or node
-
-    # # function for the result of the simulation
-    # def rollout(node):
-    #     while non_terminal(node):
-    #         node = rollout_policy(node)
-    #     return result(node)
-
-    # # function for randomly selecting a child node
-    # def rollout_policy(node):
-    #     return pick_random(node.children)
-
-    # # function for backpropagation
-    # def backpropagate(node, result):
-    #     if is_root(node) return
-    #     node.stats = update_stats(node, result)
-    #     backpropagate(node.parent)
-
-    # # function for selecting the best child
-    # # node with highest number of visits
-    # def best_child(node):
-    #     pick child with highest number of visits
+    def backpropagate(self, node, v):
+        if node.is_root(): return
+        node.stats = node.update_node(v)
+        self.backpropagate(node.parent, v)
