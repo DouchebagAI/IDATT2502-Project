@@ -19,7 +19,7 @@ class Node:
         else:
             self.N = parent.n
         # Children
-        self.children = []
+        self.children = {}
 
     # Formel for å hente verdien til noden (til valg av node i neste)
     def get_value(self):
@@ -39,7 +39,7 @@ class Node:
             return None
 
         index = -1
-        for i, item in enumerate(self.children):
+        for i, item in enumerate(self.children.values()):
             if index != -1 and item.get_value() > self.children[index].get_value():
                 index = i
 
