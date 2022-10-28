@@ -2,18 +2,17 @@ import numpy as np
 class Node:
     def __init__(self, parent, action, v= 0, n = 0, N = 0, C = 0.95):
         # state = node
+        #Action til noden
         self.action = action
         # Verdien til staten
         self.v = v
-        # Antall ganger staten er besøkt
+        # Antall ganger staten/noden er besøkt
         self.n = n
-
         # Konstant for å tweake treet
         self.C = C
         # Parent til noden
         self.parent = parent
-        # Totalt antall besøk for alle noder på denne dybden
-        # Kan vurdere å flytte ut til treet
+        # Totalt antall besøk for parent
         if self.is_root():
             self.N = N
         else:
@@ -28,6 +27,7 @@ class Node:
     def is_root(self):
         return self.parent is None
 
+    # Oppdaterer verdiene
     def update_node(self, v):
         self.n += 1
         self.v = v

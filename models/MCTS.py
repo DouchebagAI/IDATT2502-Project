@@ -4,7 +4,7 @@ import numpy as np
 
 from enum import Enum
 
-
+# Different stages for what step to do
 class Stage(Enum):
     UNDEFINED = 0
     TRAVERSE = 1
@@ -12,7 +12,7 @@ class Stage(Enum):
 
 
 class MCTS:
-
+    # Inits a MCTS
     def __init__(self, env):
         self.stage = Stage.UNDEFINED
         self.env = env
@@ -43,6 +43,8 @@ class MCTS:
         node.children.update({(new_node.action,new_node)})
         return new_node
 
+    # If there are children, choose the best child (move/action)
+    # If not, create a new child with a random action
     def traverse_step(self, node: Node, render=False):
         if len(node.children) != 0:
             node = node.best_child()
@@ -55,6 +57,7 @@ class MCTS:
         node.children.update({(new_node.action,new_node)})
         return new_node
 
+
     def rollout(self, node):
         while not self.is_terminal():
             action = self.rollout_policy()
@@ -64,6 +67,7 @@ class MCTS:
             self.env.step(node.action)
         return self.env.reward()
 
+    # No more children, creating a random action/node
     def rollout_step(self, node):
         action = self.rollout_policy()
         new_node = Node(node, action)
@@ -74,9 +78,11 @@ class MCTS:
     def rollout_policy(self):
         return self.env.uniform_random_action()
 
+    # Checks if game is ended
     def is_terminal(self):
         return self.env.game_ended()
 
+    # Updates the node values
     def backpropagate(self, node, v):
         if node.is_root():
             self.currentNode = node
@@ -84,6 +90,7 @@ class MCTS:
         node.stats = node.update_node(v)
         self.backpropagate(node.parent, v)
 
+    # Pics or creates a new child node based on opponents turn
     def opponent_turn_update(self, action):
         if action in self.currentNode.children.keys():
             self.currentNode = self.currentNode.children[action]
@@ -92,11 +99,13 @@ class MCTS:
             self.currentNode.children.update({(new_node.action,new_node)})
             self.currentNode = new_node
 
+    # Takes a turn, either by traversing or rollouting
     def take_turn(self, render=False):
         if self.stage == Stage.UNDEFINED:
             self.stage = Stage.TRAVERSE
             self.currentNode = self.traverse_step(self.currentNode, render)
         if self.stage == Stage.TRAVERSE:
+            # Changes state from traverse to rollout if no more children
             if len(self.currentNode.children) == 0:
                 self.rollout_step(self.currentNode)
                 self.stage = Stage.ROLLOUT
@@ -104,4 +113,5 @@ class MCTS:
                 self.currentNode = self.traverse_step(self.currentNode, render)
         if self.stage == Stage.ROLLOUT:
             self.rollout_step(self.currentNode)
+
         return self.is_terminal()

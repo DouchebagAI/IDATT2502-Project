@@ -1,4 +1,5 @@
 from models.MCTS import MCTS
+#Class for training wo clients
 class GameManager:
 
     def __init__(self, env, black: MCTS, white: MCTS):
@@ -15,12 +16,17 @@ class GameManager:
         for i in range(x):
             print(i)
             self.env.reset()
+            # Plays until game ends
             while not self.env.game_ended():
+                #Black starts and takes a turn
                 self.black.take_turn()
+                # White chooses node based on black action / step
                 self.white.opponent_turn_update(self.black.currentNode.action)
-                if(self.env.game_ended()):
+                if self.env.game_ended():
                     break
+                # White takes turn
                 self.white.take_turn()
+                # Black updates node based on whites turn
                 self.black.opponent_turn_update(self.white.currentNode.action)
 
             if self.env.winner() == 1: black_w += 1
@@ -36,6 +42,7 @@ class GameManager:
         print(f"Tie: {tie}")
 
     def play_as_white(self):
+        # Same logic as in training, but instead user takes action when whites turn
         self.env.reset()
         while not self.env.game_ended():
             self.black.take_turn()
