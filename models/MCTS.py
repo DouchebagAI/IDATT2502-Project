@@ -66,7 +66,7 @@ class MCTS:
             self.currentNode = self.currentNode.children[action]
         else:
             new_node = Node(self.currentNode, action)
-            self.currentNode.children.update({(new_node.action, new_node)})
+            self.currentNode.children.update({(action, new_node)})
             self.currentNode = new_node
 
     # Takes a turn, either by traversing or rollouting

@@ -25,16 +25,16 @@ class GameManager:
             while not done:
                 # Black starts and takes a turn
                 action = self.black.take_turn()
-                state, reward, done, info = self.env.step(action)
                 # White chooses node based on black action / step
                 self.white.opponent_turn_update(action)
+                state, reward, done, info = self.env.step(action)
                 if done:
                     break
                 # White takes turn
                 action = self.white.take_turn()
-                state, reward, done, info = self.env.step(action)
                 # Black updates node based on whites turn
                 self.black.opponent_turn_update(action)
+                state, reward, done, info = self.env.step(action)
 
             if self.env.winner() == 1:
                 black_w += 1
