@@ -19,6 +19,8 @@ class GameManager:
 
         for i in range(x):
             self.env.reset()
+            if i % 1000 == 0:
+                print(i)
             # Plays until game ends
             while not self.env.game_ended():
                 # Black starts and takes a turn

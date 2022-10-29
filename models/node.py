@@ -35,7 +35,7 @@ class Node:
     # Oppdaterer verdiene
     def update_node(self, v):
         self.n += 1
-        self.v = v
+        self.v += v
 
     # Finner det barnet med høyest value
     # None hvis ingen barn
