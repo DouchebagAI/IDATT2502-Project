@@ -1,7 +1,12 @@
-import json
+from enum import Enum
 
 import numpy as np
 
+
+
+class Type(Enum):
+    BLACK = 0
+    WHITE = 1
 
 class Node:
     def __init__(self, parent, action, v=0, n=0):
@@ -19,8 +24,11 @@ class Node:
         self.children = {}
 
     # Formel for å hente verdien til noden (til valg av node i neste)
-    def get_value(self, C=0.95, y=1):
-        return y * (self.v / self.n + C * np.sqrt(np.log(self.getN()) / self.n))
+    def get_value(self,  type: Type, C=0.95):
+        if type == Type.BLACK:
+            return self.v / self.n + C * np.sqrt(np.log(self.getN()) / self.n)
+        else:
+            return (-1)*(self.v / self.n - C * np.sqrt(np.log(self.getN()) / self.n))
 
     # Gets parents n's
     def getN(self):
@@ -34,18 +42,40 @@ class Node:
 
     # Oppdaterer verdiene
     def update_node(self, v):
-        self.n += 1
-        self.v += v
+        self.n = self.n + 1
+        self.v = self.v + v
 
     # Finner det barnet med høyest value
     # None hvis ingen barn
-    def best_child(self, y=1):
+    def best_child(self, type: Type):
         if len(self.children) == 0:
             return None
 
-        index = -1
-        for i, item in enumerate(self.children.values()):
-            if index == -1 or item.get_value(y) > self.children[index].get_value(y):
-                index = item.action
+        best_action = list(self.children.values())[0].action
+        for node in self.children.values():
+            if self.children[best_action].get_value(type) < node.get_value(type):
+                best_action = node.action
 
-        return self.children[index]
+        return self.children[best_action]
+
+    def __str__(self):
+        return f"a: {self.action}, v: {self.v}, n: {self.n}, N: {self.getN()}, parent: {self.parent.action if self.parent != None else 'Root'}"
+
+    def print_node(self, x :int):
+        print(self.__str__())
+        if len(self.children) == 0:
+            return
+        print(f"Layer {x}:")
+        for i in self.children.values():
+            i.print_node(x+1)
+
+    def check_ns(self):
+        if len(self.children) == 0:
+            return
+        sum = 0
+        for i in self.children.values():
+            i.check_ns()
+            sum += i.n
+        if sum != self.n:
+            print(f"\nSum: {sum}")
+            print(f"n: {self.n}\n")

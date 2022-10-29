@@ -1,8 +1,9 @@
-from models.node import Node
+from models.node import Node, Type
 from operator import attrgetter
 import numpy as np
-
 from enum import Enum
+
+
 
 # Different stages for what step to do
 
@@ -14,66 +15,33 @@ class Stage(Enum):
 
 class MCTS:
     # Inits a MCTS
-    def __init__(self, env, y=1):
+    def __init__(self, env, name,type):
         self.stage = Stage.UNDEFINED
         self.env = env
         self.R = Node(None, None)
         self.currentNode = self.R
-        self.y = y
 
-    def monte_carlo_tree_search(self, x=100, render=False):
-        for i in range(x):
-            self.env.reset()
-            leaf = self.traverse(self.currentNode, render)
-            simulation_result = self.rollout(leaf)
-            self.backpropagate(leaf, simulation_result)
-        return self.R.best_child(self.y)
-
-    def traverse(self, node: Node, render=False):
-        done = False
-        while len(node.children) != 0 and not done:
-            node = node.best_child(self.y)
-            state, reward, done, info = self.env.step(node.action)
-            if done:
-                print("Hello")
-                break
-            if render:
-                self.env.render('terminal')
-
-        new_node = Node(node, self.rollout_policy())
-        node.children.update({(new_node.action,new_node)})
-        return new_node
+        self.type = type
+        self.name = name
 
     # If there are children, choose the best child (move/action)
     # If not, create a new child with a random action
     def traverse_step(self, node: Node, render=False):
         if len(node.children) != 0:
-            new_node = node.best_child(self.y)
-            state, reward, done, info = self.env.step(node.action)
-            if render:
-                self.env.render('terminal')
-            return new_node
+            new_node = node.best_child(self.type)
+
+            if new_node.get_value(self.type) > 2:
+                return new_node
 
         new_node = Node(node, self.rollout_policy())
         node.children.update({(new_node.action, new_node)})
         return new_node
 
-
-    def rollout(self, node):
-        while not self.is_terminal():
-            action = self.rollout_policy()
-            new_node = Node(node, action)
-            node.children.update({(new_node.action,new_node)})
-            node = new_node
-            self.env.step(node.action)
-        return self.env.reward()
-
     # No more children, creating a random action/node
     def rollout_step(self, node):
         action = self.rollout_policy()
         new_node = Node(node, action)
-        node.children.update({(action,new_node)})
-        self.env.step(new_node.action)
+        node.children.update({(action, new_node)})
         return new_node
 
     def rollout_policy(self):
@@ -86,11 +54,12 @@ class MCTS:
     # Updates the node values
     def backpropagate(self, node, v):
         if node.is_root():
+            node.n += 1
+            self.stage = Stage.TRAVERSE
+            return node
+        else:
             node.update_node(v)
-            self.currentNode = node
-            return
-        node.update_node(v)
-        self.backpropagate(node.parent, v)
+            return self.backpropagate(node.parent, v)
 
     # Pics or creates a new child node based on opponents turn
     def opponent_turn_update(self, action):
@@ -98,10 +67,11 @@ class MCTS:
             self.currentNode = self.currentNode.children[action]
         else:
             new_node = Node(self.currentNode, action)
-            self.currentNode.children.update({(new_node.action,new_node)})
+            self.currentNode.children.update({(new_node.action, new_node)})
             self.currentNode = new_node
 
     # Takes a turn, either by traversing or rollouting
+    # Returns action
     def take_turn(self, render=False):
         if self.stage == Stage.UNDEFINED:
             self.stage = Stage.TRAVERSE
@@ -117,4 +87,3 @@ class MCTS:
             self.currentNode = self.rollout_step(self.currentNode)
 
         return self.currentNode.action
-

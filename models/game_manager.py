@@ -12,7 +12,6 @@ class GameManager:
     def train(self, x=100):
 
         self.env.reset()
-        # self.black.monte_carlo_tree_search(render=False)
         black_w = 0
         white_w = 0
         tie = 0
@@ -21,16 +20,19 @@ class GameManager:
             self.env.reset()
             if i % 1000 == 0:
                 print(i)
+            done = False
             # Plays until game ends
-            while not self.env.game_ended():
+            while not done:
                 # Black starts and takes a turn
                 action = self.black.take_turn()
+                state, reward, done, info = self.env.step(action)
                 # White chooses node based on black action / step
                 self.white.opponent_turn_update(action)
-                if self.env.game_ended():
+                if done:
                     break
                 # White takes turn
                 action = self.white.take_turn()
+                state, reward, done, info = self.env.step(action)
                 # Black updates node based on whites turn
                 self.black.opponent_turn_update(action)
 
@@ -44,8 +46,8 @@ class GameManager:
                 tie += 1
 
             # self.env.render('terminal')
-            self.black.backpropagate(self.black.currentNode, self.env.winner())
-            self.white.backpropagate(self.white.currentNode, self.env.winner() * -1)
+            self.black.currentNode = self.black.backpropagate(self.black.currentNode, self.env.winner())
+            self.white.currentNode = self.white.backpropagate(self.white.currentNode, self.env.winner() * -1)
 
         # print(self.black.R.print_self())
         # print(self.white.R.print_self())
@@ -58,8 +60,8 @@ class GameManager:
         self.env.reset()
         valid = False
         while not self.env.game_ended():
-            self.black.take_turn()
-            action = -1
+            action = self.black.take_turn()
+            state, reward, done, info = self.env.step(action)
             while not valid:
                 try:
                     action = self.env.render(mode="human")
@@ -73,11 +75,15 @@ class GameManager:
 
     def play_as_black(self):
         self.env.reset()
-        while not self.env.game_ended():
+        done = False
+        while not done:
             action = self.env.render(mode="human")
             state, reward, done, info = self.env.step(action)
             self.white.opponent_turn_update(action)
-            self.white.take_turn()
+            if done:
+                return
+            action = self.white.take_turn()
+            state, reward, done, info = self.env.step(action)
         self.print_winner(1)
 
     def print_winner(self, x):
