@@ -46,8 +46,8 @@ class GameManager:
                 tie += 1
 
             # self.env.render('terminal')
-            self.black.currentNode = self.black.backpropagate(self.black.currentNode, self.env.winner())
-            self.white.currentNode = self.white.backpropagate(self.white.currentNode, self.env.winner() * -1)
+            self.black.backpropagate(self.black.currentNode, self.env.winner())
+            self.white.backpropagate(self.white.currentNode, self.env.winner() * -1)
 
         # print(self.black.R.print_self())
         # print(self.white.R.print_self())

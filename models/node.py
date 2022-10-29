@@ -24,7 +24,7 @@ class Node:
         self.children = {}
 
     # Formel for å hente verdien til noden (til valg av node i neste)
-    def get_value(self,  type: Type, C=0.95):
+    def get_value(self,  type: Type, C=1.4):
         if type == Type.BLACK:
             return self.v / self.n + C * np.sqrt(np.log(self.getN()) / self.n)
         else:

@@ -29,8 +29,7 @@ class MCTS:
     def traverse_step(self, node: Node, render=False):
         if len(node.children) != 0:
             new_node = node.best_child(self.type)
-
-            if new_node.get_value(self.type) > 2:
+            if new_node.get_value(self.type) > 1:
                 return new_node
 
         new_node = Node(node, self.rollout_policy())
@@ -56,10 +55,10 @@ class MCTS:
         if node.is_root():
             node.n += 1
             self.stage = Stage.TRAVERSE
-            return node
+            self.currentNode = node
         else:
             node.update_node(v)
-            return self.backpropagate(node.parent, v)
+            self.backpropagate(node.parent, v)
 
     # Pics or creates a new child node based on opponents turn
     def opponent_turn_update(self, action):
