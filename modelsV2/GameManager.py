@@ -58,14 +58,14 @@ class GameManager:
         # Same logic as in training, but instead user takes action when whites turn
         self.env.reset()
         while not self.env.game_ended():
-            action = mcts1.take_turn(mcts1.currentNode)
+            action = mcts1.take_turn()
             state, reward, done, info = self.env.step(action)
             mcts2.opponent_turn_update(action)
                         
             if self.env.game_ended():
                 break
             
-            action = mcts2.take_turn(mcts2.currentNode)
+            action = mcts2.take_turn()
             state, reward, done, info = self.env.step(action)
             mcts1.opponent_turn_update(action)
         
