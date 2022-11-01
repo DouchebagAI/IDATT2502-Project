@@ -13,8 +13,9 @@ mctsShit = MCTS(go_env)
 mctsGod = MCTS(go_env)
 
 gm.train(mctsShit, n=10)
-gm.train(mctsGod, n=10000)
-
+gm.train(mctsGod, n=1000)
+mctsGod.R.check_ns()
+mctsShit.R.check_ns()
 black_wins = 0
 white_wins = 0
 tie = 0

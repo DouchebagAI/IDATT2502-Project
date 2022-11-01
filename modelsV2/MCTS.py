@@ -15,7 +15,7 @@ class MCTS:
         if node.best_child(type).get_value(type) > self.traverseLimit:
             self.currentNode = node.best_child(type)
         else:
-            self.rollout_step(node)
+            self.rollout_step(node, type)
 
     # Finner beste barnet til en node, eller lager et nytt med en random action
     def traverse_policy(self, node: Node):
@@ -28,14 +28,17 @@ class MCTS:
         else:
             # Om ingen barn som oppfyller krav finnes, 
             # lager vi et nytt barn med en random action
-            self.rollout_step(node)
+            self.rollout_step(node, type)
         self.moveCount += 1
 
-    def rollout_step(self, node):
+    def rollout_step(self, node, type: Type):
         action = self.rollout_policy()
-        new_node = Node(node, action)
-        node.children.update({(action, new_node)})
-        self.currentNode = new_node
+        if action in self.currentNode.children.keys():
+            self.currentNode = node.best_child(type)
+        else:
+            new_node = Node(node, action)
+            node.children.update({(action, new_node)})
+            self.currentNode = new_node
 
     def rollout_policy(self):
         return self.env.uniform_random_action()
