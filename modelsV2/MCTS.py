@@ -20,28 +20,28 @@ class MCTS:
     def traverse_step(self, type: Type, node: Node):
         if node.best_child(type).get_value(type) > self.traverseLimit:
             self.currentNode = node.best_child(type)
+            return self.currentNode.action
         else:
-            self.rollout_step(node)
+            return self.rollout_step(node)
 
     # Finner beste barnet til en node, eller lager et nytt med en random action
     def traverse_policy(self, node: Node):
         if len(node.children) != 0:
             # Svart er partall, hvit oddetall
             if self.moveCount % 2 == 0:
-                self.traverse_step(Type.BLACK, node)
+                return self.traverse_step(Type.BLACK, node)
             else:
-                self.traverse_step(Type.WHITE, node)
+                return self.traverse_step(Type.WHITE, node)
         else:
             # Om ingen barn som oppfyller krav finnes, 
             # lager vi et nytt barn med en random action
-            self.rollout_step(node)
+            return self.rollout_step(node)
                 
 
     def take_turn(self):
         action = -1
         if self.stage is Stage.TRAVERSE:
-            self.traverse_policy(self.currentNode)
-            action = self.currentNode.action
+            action = self.traverse_policy(self.currentNode)
         elif self.stage is Stage.SIMULATION:
             action = self.rollout_policy()
         
@@ -58,6 +58,7 @@ class MCTS:
             node.children.update({(action, new_node)})
             self.currentNode = new_node
             self.stage = Stage.SIMULATION
+        return self.currentNode.action
 
     def rollout_policy(self):
         return self.env.uniform_random_action()
