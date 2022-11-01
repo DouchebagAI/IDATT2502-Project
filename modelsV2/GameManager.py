@@ -12,20 +12,14 @@ class GameManager:
         tie = 0
         
         for i in range(n):
+            if i % 100 == 0: print(f"Training round {i}")
             # Nullstiller brettet
             self.env.reset()
             done = False
-            sim = False
             while not done:
+                
                 # Gjør et trekk
-                action = -1
-                if len(mcts.currentNode.children) == 0 and sim is True:
-                    action = mcts.rollout_policy()
-                else:
-                    mcts.traverse_policy(mcts.currentNode)
-                    action = mcts.currentNode.action
-                    sim = True
-
+                action = mcts.take_turn()
                 state, reward, done, info = self.env.step(action)
 
             match self.env.winner():

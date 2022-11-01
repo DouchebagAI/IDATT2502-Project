@@ -1,4 +1,10 @@
 from modelsV2.node import Node, Type
+from enum import Enum
+
+
+class Stage(Enum):
+    TRAVERSE = 1
+    SIMULATION = 2
 
 class MCTS:
 
@@ -7,7 +13,7 @@ class MCTS:
         self.env = env
         self.R = Node(None, None)
         self.currentNode = self.R
-        self.simNode = self.R
+        self.stage = Stage.TRAVERSE
         # Grense for å velge et barn som et godt valg 
         self.traverseLimit = 1
 
@@ -28,14 +34,21 @@ class MCTS:
         else:
             # Om ingen barn som oppfyller krav finnes, 
             # lager vi et nytt barn med en random action
-            if self.moveCount % 2 == 0:
-                self.rollout_step(node)
-            else:
-                self.rollout_step(node)
+            self.rollout_step(node)
+                
+
+    def take_turn(self):
+        action = -1
+        if self.stage is Stage.TRAVERSE:
+            self.traverse_policy(self.currentNode)
+            action = self.currentNode.action
+        elif self.stage is Stage.SIMULATION:
+            action = self.rollout_policy()
+        
         self.moveCount += 1
+        return action
 
-
-
+    # if there is space for a new node, a new node is added
     def rollout_step(self, node):
         action = self.rollout_policy()
         if action in self.currentNode.children.keys():
@@ -44,6 +57,7 @@ class MCTS:
             new_node = Node(node, action)
             node.children.update({(action, new_node)})
             self.currentNode = new_node
+            self.stage = Stage.SIMULATION
 
     def rollout_policy(self):
         return self.env.uniform_random_action()
@@ -55,6 +69,7 @@ class MCTS:
         node.n += 1
         self.currentNode = node
         self.moveCount = 0
+        self.stage = Stage.TRAVERSE
 
     def opponent_turn_update(self, action):
         if action in self.currentNode.children.keys():
