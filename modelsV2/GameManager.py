@@ -57,6 +57,8 @@ class GameManager:
     def test(self, mcts1, mcts2):
         # Same logic as in training, but instead user takes action when whites turn
         self.env.reset()
+        mcts1.currentNode = mcts1.R
+        mcts2.currentNode = mcts2.R
         while not self.env.game_ended():
             action = mcts1.take_turn()
             state, reward, done, info = self.env.step(action)
@@ -68,7 +70,6 @@ class GameManager:
             action = mcts2.take_turn()
             state, reward, done, info = self.env.step(action)
             mcts1.opponent_turn_update(action)
-        
         return self.env.winner()
 
     def print_winner(self):
