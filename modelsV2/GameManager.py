@@ -15,10 +15,18 @@ class GameManager:
             # Nullstiller brettet
             self.env.reset()
             done = False
+            sim = False
             while not done:
                 # Gjør et trekk
-                mcts.traverse_policy(mcts.currentNode)
-                state, reward, done, info = self.env.step(mcts.currentNode.action)
+                action = -1
+                if len(mcts.currentNode.children) == 0 and sim is True:
+                    action = mcts.rollout_policy()
+                else:
+                    mcts.traverse_policy(mcts.currentNode)
+                    action = mcts.currentNode.action
+                    sim = True
+
+                state, reward, done, info = self.env.step(action)
 
             match self.env.winner():
                 case 1:

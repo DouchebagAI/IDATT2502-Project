@@ -13,7 +13,7 @@ mctsShit = MCTS(go_env)
 mctsGod = MCTS(go_env)
 
 gm.train(mctsShit, n=10)
-gm.train(mctsGod, n=1000)
+gm.train(mctsGod, n=100)
 mctsGod.R.check_ns()
 mctsShit.R.check_ns()
 black_wins = 0
@@ -21,7 +21,7 @@ white_wins = 0
 tie = 0
 
 for i in range(100):
-    val = gm.test(mctsShit, mctsGod)
+    val = gm.test(mctsGod, mctsShit)
     match val: 
         case 1:
             black_wins += 1
