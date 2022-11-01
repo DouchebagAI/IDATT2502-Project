@@ -1,5 +1,5 @@
 from models.MCTS import MCTS, Type
-from models.node import Node
+from modelsV2.node import Node
 
 mcts = MCTS(None, "black", Type.BLACK)
 

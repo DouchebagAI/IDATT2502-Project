@@ -2,7 +2,7 @@ from models.MCTS import MCTS
 
 
 # Class for training wo clients
-class GameManager:
+class GameManager1:
 
     def __init__(self, env, black: MCTS, white: MCTS):
         self.env = env
@@ -28,7 +28,7 @@ class GameManager:
                 # White chooses node based on black action / step
                 self.white.opponent_turn_update(action)
                 state, reward, done, info = self.env.step(action)
-
+                #self.env.render('terminal')
                 if done:
                     break
                 # White takes turn
@@ -36,6 +36,8 @@ class GameManager:
                 # Black updates node based on whites turn
                 self.black.opponent_turn_update(action)
                 state, reward, done, info = self.env.step(action)
+                #self.env.render('terminal')
+
 
 
             if self.env.winner() == 1:
@@ -47,13 +49,12 @@ class GameManager:
             else:
                 tie += 1
 
-            # self.env.render('terminal')
-            assert self.black.currentNode.action == self.white.currentNode.action
+            #self.env.render('terminal')
             w_i = 0
             b_i = 0
             self.black.backpropagate(self.black.currentNode, self.env.winner(), b_i)
             self.white.backpropagate(self.white.currentNode, self.env.winner() * -1, w_i)
-            assert w_i == b_i
+            # assert w_i == b_i
 
         # print(self.black.R.print_self())
         # print(self.white.R.print_self())

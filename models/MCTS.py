@@ -1,4 +1,4 @@
-from models.node import Node, Type
+from modelsV2.node import Node, Type
 from operator import attrgetter
 import numpy as np
 from enum import Enum
@@ -13,7 +13,7 @@ class Stage(Enum):
     ROLLOUT = 2
 
 
-class MCTS:
+class MCT1S:
     # Inits a MCTS
     def __init__(self, env, name,type):
         self.stage = Stage.UNDEFINED
@@ -26,7 +26,7 @@ class MCTS:
     # If not, create a new child with a random action
     def traverse_step(self, node: Node, render=False):
         if len(node.children) != 0:
-            if node.best_child(self.type).get_value(self.type) > 1:
+            if node.best_child(self.type).get_value(self.type) > 0:
                 return node.best_child(self.type)
 
         new_node = Node(node, self.rollout_policy())

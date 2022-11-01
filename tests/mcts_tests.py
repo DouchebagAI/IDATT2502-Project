@@ -1,5 +1,5 @@
 from models.MCTS import MCTS
-from models.node import Node
+from modelsV2.node import Node
 
 mcts_black = MCTS(None, "black")
 mcts_white = MCTS(None, "white", -1)

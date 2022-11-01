@@ -3,7 +3,6 @@ from enum import Enum
 import numpy as np
 
 
-
 class Type(Enum):
     BLACK = 0
     WHITE = 1
@@ -33,7 +32,7 @@ class Node:
     # Gets parents n's
     def getN(self):
         if self.is_root():
-            return 0
+            return self.n
         else:
             return self.parent.n
 
@@ -51,12 +50,10 @@ class Node:
         if len(self.children) == 0:
             return None
 
-        best_action = list(self.children.values())[0].action
-        for node in self.children.values():
-            if self.children[best_action].get_value(type) < node.get_value(type):
-                best_action = node.action
+        # Find best child
+        best_child = max(self.children.values(), key=lambda x: x.get_value(type))
 
-        return self.children[best_action]
+        return best_child
 
     def __str__(self):
         return f"a: {self.action}, v: {self.v}, n: {self.n}, N: {self.getN()}, parent: {self.parent.action if self.parent != None else 'Root'}"

@@ -2,22 +2,42 @@ import json
 import warnings
 warnings.filterwarnings("ignore")
 import gym
-from models.MCTS import *
-from models.game_manager import *
-go_env = gym.make('gym_go:go-v0', size=5, komi=0, reward_method='real')
 
-black = MCTS(go_env,"black", Type.BLACK)
-white = MCTS(go_env,"white", Type.WHITE)
-gm = GameManager(go_env, black, white)
-gm.train(x=10)
-print("White tree")
-gm.white.R.check_ns()
-print("Black tree")
-gm.black.R.check_ns()
-print("White tree")
-#gm.white.R.print_node(0)
-print("Black tree")
-#gm.black.R.print_node(0)
-#black.monte_carlo_tree_search(10000)
-#gm.play_as_white()
+from modelsV2.MCTS import MCTS
+from modelsV2.GameManager import GameManager
+go_env = gym.make('gym_go:go-v0', size=3, komi=0, reward_method='real')
+
+gm = GameManager(go_env)
+
+mctsShit = MCTS(go_env)
+mctsGod = MCTS(go_env)
+
+gm.train(mctsShit, n=10)
+gm.train(mctsGod, n=10000)
+
+black_wins = 0
+white_wins = 0
+tie = 0
+
+for i in range(100):
+    val = gm.test(mctsShit, mctsGod)
+    match val: 
+        case 1:
+            black_wins += 1
+        case -1:
+            white_wins += 1
+        case _:
+            tie += 1
+
+
+print("\n\n****************")     
+print(f"Black wins: {black_wins}")
+print(f"White wins: {white_wins}")
+print(f"Tie: {tie}")
+
+
+    
+
+
+
 
