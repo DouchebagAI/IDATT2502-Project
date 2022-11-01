@@ -20,17 +20,14 @@ class MCTS:
         self.env = env
         self.R = Node(None, None)
         self.currentNode = self.R
-
         self.type = type
-        self.name = name
 
     # If there are children, choose the best child (move/action)
     # If not, create a new child with a random action
     def traverse_step(self, node: Node, render=False):
         if len(node.children) != 0:
-            new_node = node.best_child(self.type)
-            if new_node.get_value(self.type) > 1:
-                return new_node
+            if node.best_child(self.type).get_value(self.type) > 1:
+                return node.best_child(self.type)
 
         new_node = Node(node, self.rollout_policy())
         node.children.update({(new_node.action, new_node)})
@@ -51,14 +48,15 @@ class MCTS:
         return self.env.game_ended()
 
     # Updates the node values
-    def backpropagate(self, node, v):
+    def backpropagate(self, node, v, i):
+        i += 1
         if node.is_root():
             node.n += 1
-            self.stage = Stage.TRAVERSE
+            self.stage = Stage.UNDEFINED
             self.currentNode = node
         else:
             node.update_node(v)
-            self.backpropagate(node.parent, v)
+            self.backpropagate(node.parent, v,i)
 
     # Pics or creates a new child node based on opponents turn
     def opponent_turn_update(self, action):

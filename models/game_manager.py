@@ -28,6 +28,7 @@ class GameManager:
                 # White chooses node based on black action / step
                 self.white.opponent_turn_update(action)
                 state, reward, done, info = self.env.step(action)
+
                 if done:
                     break
                 # White takes turn
@@ -35,6 +36,7 @@ class GameManager:
                 # Black updates node based on whites turn
                 self.black.opponent_turn_update(action)
                 state, reward, done, info = self.env.step(action)
+
 
             if self.env.winner() == 1:
                 black_w += 1
@@ -46,8 +48,12 @@ class GameManager:
                 tie += 1
 
             # self.env.render('terminal')
-            self.black.backpropagate(self.black.currentNode, self.env.winner())
-            self.white.backpropagate(self.white.currentNode, self.env.winner() * -1)
+            assert self.black.currentNode.action == self.white.currentNode.action
+            w_i = 0
+            b_i = 0
+            self.black.backpropagate(self.black.currentNode, self.env.winner(), b_i)
+            self.white.backpropagate(self.white.currentNode, self.env.winner() * -1, w_i)
+            assert w_i == b_i
 
         # print(self.black.R.print_self())
         # print(self.white.R.print_self())

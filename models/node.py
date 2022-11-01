@@ -77,5 +77,10 @@ class Node:
             i.check_ns()
             sum += i.n
         if sum != self.n:
-            print(f"\nSum: {sum}")
+            print("\nError")
+            print(f"Sum: {sum}")
+            print(f"n: {self.n}\n")
+        elif self.n != 1:
+            print("\nKnots")
+            print(f"Sum: {sum}")
             print(f"n: {self.n}\n")
