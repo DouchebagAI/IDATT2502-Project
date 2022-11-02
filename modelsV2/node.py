@@ -56,15 +56,13 @@ class Node:
         return best_child
 
     def __str__(self):
-        return f"a: {self.action}, v: {self.v}, n: {self.n}, N: {self.getN()}, parent: {self.parent.action if self.parent != None else 'Root'}"
+        return f" v: {self.get_value(Type.BLACK).__round__(2)}, n: {self.n}, N: {self.getN()}, a: {self.action}, parent: {self.parent.action if self.parent != None else 'Root'}"
 
-    def print_node(self, x :int):
-        print(self.__str__())
-        if len(self.children) == 0:
-            return
-        print(f"Layer {x}:")
+    # Prints the tree in a nice format
+    def print_node(self, depth):
+        print(f"{'  '*4*depth}{self}")
         for i in self.children.values():
-            i.print_node(x+1)
+            i.print_node(depth+1)
 
     def check_ns(self):
         if len(self.children) == 0:
@@ -78,3 +76,5 @@ class Node:
             print(f"Sum: {sum}")
             print(f"n: {self.n}\n")
 
+    def print_tree(self):
+        self.print_node(0)

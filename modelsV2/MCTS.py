@@ -16,6 +16,9 @@ class MCTS:
         self.stage = Stage.TRAVERSE
         # Grense for å velge et barn som et godt valg 
         self.traverseLimit = 1
+        self.node_count = 0
+        # Tree depth
+        self.tree_depth = 1
 
     def traverse_step(self, type: Type, node: Node):
         if node.best_child(type).get_value(type) > self.traverseLimit:
@@ -35,6 +38,7 @@ class MCTS:
         else:
             # Om ingen barn som oppfyller krav finnes, 
             # lager vi et nytt barn med en random action
+            
             return self.rollout_step(node)
                 
 
@@ -57,6 +61,7 @@ class MCTS:
             new_node = Node(node, action)
             node.children.update({(action, new_node)})
             self.currentNode = new_node
+            self.node_count += 1
             self.stage = Stage.SIMULATION
         return self.currentNode.action
 
@@ -81,3 +86,8 @@ class MCTS:
             self.currentNode = new_node
         
         self.moveCount += 1
+
+    # Metode for å visualisere treet
+    def print_tree(self):
+        self.R.print_tree()
+        

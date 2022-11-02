@@ -1,4 +1,3 @@
-from modelsV2.MCTS import MCTS
 
 class GameManager:
     def __init__(self, env):
@@ -12,7 +11,7 @@ class GameManager:
         tie = 0
         
         for i in range(n):
-            if i % 100 == 0: print(f"Training round {i}")
+            # if i % 100 == 0: print(f"Training round {i}")
             # Nullstiller brettet
             self.env.reset()
             done = False
@@ -35,6 +34,11 @@ class GameManager:
         print(f"Black wins: {black_wins}")
         print(f"White wins: {white_wins}")
         print(f"Tie: {tie}")
+        print("Node Count: ", mcts.node_count)
+        print("****************")
+        mcts.print_tree()
+        print("****************")
+        
             
     def play_as_white(self, mcts):
         # Same logic as in training, but instead user takes action when whites turn
