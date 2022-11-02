@@ -19,6 +19,7 @@ class MCTS:
         self.node_count = 0
         # Tree depth
         self.tree_depth = 1
+        self.traverseLimit = 4
 
     def traverse_step(self, type: Type, node: Node):
         if node.best_child(type).get_value(type) > self.traverseLimit:
@@ -60,6 +61,7 @@ class MCTS:
         else:
             new_node = Node(node, action)
             node.children.update({(action, new_node)})
+            #print(f"action: {action}")
             self.currentNode = new_node
             self.node_count += 1
             self.stage = Stage.SIMULATION
@@ -90,4 +92,3 @@ class MCTS:
     # Metode for å visualisere treet
     def print_tree(self):
         self.R.print_tree()
-        

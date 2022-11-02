@@ -1,3 +1,4 @@
+from modelsV2.MCTS import MCTS, Stage
 
 class GameManager:
     def __init__(self, env):
@@ -28,7 +29,9 @@ class GameManager:
                     white_wins += 1
                 case _:
                     tie += 1
-
+            #print(f"Winner: {self.env.winner()}")
+            if mcts.stage is Stage.TRAVERSE:
+                print(mcts.currentNode)
             mcts.backpropagate(mcts.currentNode, self.env.winner())
             
         print(f"Black wins: {black_wins}")
