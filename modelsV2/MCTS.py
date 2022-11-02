@@ -15,7 +15,7 @@ class MCTS:
         self.currentNode = self.R
         self.stage = Stage.TRAVERSE
         # Grense for å velge et barn som et godt valg 
-        self.traverseLimit = 1
+        self.traverseLimit = 4
 
     def traverse_step(self, type: Type, node: Node):
         if node.best_child(type).get_value(type) > self.traverseLimit:
@@ -56,7 +56,7 @@ class MCTS:
         else:
             new_node = Node(node, action)
             node.children.update({(action, new_node)})
-            print(f"action: {action}")
+            #print(f"action: {action}")
             self.currentNode = new_node
             self.stage = Stage.SIMULATION
         return self.currentNode.action
