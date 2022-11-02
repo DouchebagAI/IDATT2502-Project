@@ -1,35 +1,34 @@
-from modelsV2.node import Node, Type
+from MCTS.Node import Node, Type
 from enum import Enum
-
 
 class Stage(Enum):
     TRAVERSE = 1
     SIMULATION = 2
 
-class MCTS:
+class MCTSDNN:
 
     def __init__(self, env):
         self.moveCount = 0
         self.env = env
+        # Root node for MCTS
         self.R = Node(None, None)
         self.currentNode = self.R
         self.stage = Stage.TRAVERSE
-        # Grense for å velge et barn som et godt valg 
-        self.traverseLimit = 1
+        # Number of nodes in the tree 
         self.node_count = 0
-        # Tree depth
-        self.tree_depth = 1
-        self.traverseLimit = 4
+    
+    # Finds the best child of the current node, 
+    # and simulates if the node has never been visited
+    def traverse_step(self, type: Type, node: Node):    
+        self.currentNode = node.best_child(type)
+        #Simuler hvis beste verdi har n = 0
+        if self.currentNode.n == 0:
+            self.stage = Stage.SIMULATION
+        return self.currentNode.action
+        
 
-    def traverse_step(self, type: Type, node: Node):
-        if node.best_child(type).get_value(type) > self.traverseLimit:
-            self.currentNode = node.best_child(type)
-            return self.currentNode.action
-        else:
-            return self.rollout_step(node)
-
-    # Finner beste barnet til en node, eller lager et nytt med en random action
-    def traverse_policy(self, node: Node):
+    # Finds the best child of the current node, and creates children if it is a leaf node
+    def tree_policy(self, node: Node):
         if len(node.children) != 0:
             # Svart er partall, hvit oddetall
             if self.moveCount % 2 == 0:
@@ -40,32 +39,38 @@ class MCTS:
             # Om ingen barn som oppfyller krav finnes, 
             # lager vi et nytt barn med en random action
             
-            return self.rollout_step(node)
+            return self.expand()
                 
-
+    # Method to take a sigle turn
+    # either via traverse or simulation
     def take_turn(self):
         action = -1
         if self.stage is Stage.TRAVERSE:
-            action = self.traverse_policy(self.currentNode)
+            action = self.tree_policy(self.currentNode)
         elif self.stage is Stage.SIMULATION:
             action = self.rollout_policy()
         
         self.moveCount += 1
         return action
 
-    # if there is space for a new node, a new node is added
-    def rollout_step(self, node):
+    # If there is space for a new node, a new node is added to the current node
+    # returns the action og the new node
+    def expand(self, node):
         action = self.rollout_policy()
-        if action in self.currentNode.children.keys():
-            self.currentNode = node.children[action]
-        else:
-            new_node = Node(node, action)
-            node.children.update({(action, new_node)})
-            #print(f"action: {action}")
-            self.currentNode = new_node
-            self.node_count += 1
-            self.stage = Stage.SIMULATION
+        valid_moves = self.env.valid_moves()
+        for index in range(len(valid_moves)):
+            if index not in self.currentNode.children.keys() and valid_moves[index] == 1.0:
+                new_node = Node(self.currentNode, index)
+                self.currentNode.children.update({(index, new_node)})
+                self.node_count += 1
+        #print(f"action: {action}")
+        self.currentNode = self.currentNode.children[action]
+        self.node_count += 1
+        self.stage = Stage.SIMULATION
+            # Legg til barn for alle valid moves
+                            
         return self.currentNode.action
+
 
     def rollout_policy(self):
         return self.env.uniform_random_action()

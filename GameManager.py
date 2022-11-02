@@ -1,8 +1,9 @@
-from modelsV2.MCTS import MCTS, Stage
+from MCTS.MCTS import MCTS, Stage
 
 class GameManager:
     def __init__(self, env):
         self.env = env
+        #print valid moves
 
     #Trener treet n ganger ved å smiulere runder
     def train(self, mcts, n=100):
@@ -12,7 +13,7 @@ class GameManager:
         tie = 0
         
         for i in range(n):
-            # if i % 100 == 0: print(f"Training round {i}")
+            if i % 1000 == 0: print(f"Training round {i}")
             # Nullstiller brettet
             self.env.reset()
             done = False
@@ -30,16 +31,17 @@ class GameManager:
                 case _:
                     tie += 1
             #print(f"Winner: {self.env.winner()}")
-            if mcts.stage is Stage.TRAVERSE:
-                print(mcts.currentNode)
+            #if mcts.stage is Stage.TRAVERSE:
+                #print(mcts.currentNode)
             mcts.backpropagate(mcts.currentNode, self.env.winner())
+            
             
         print(f"Black wins: {black_wins}")
         print(f"White wins: {white_wins}")
         print(f"Tie: {tie}")
         print("Node Count: ", mcts.node_count)
         print("****************")
-        mcts.print_tree()
+        #mcts.print_tree()
         print("****************")
         
             
@@ -77,6 +79,8 @@ class GameManager:
             action = mcts2.take_turn()
             state, reward, done, info = self.env.step(action)
             mcts1.opponent_turn_update(action)
+        mcts1.stage = Stage.TRAVERSE
+        mcts2.stage = Stage.TRAVERSE
         return self.env.winner()
 
     def print_winner(self):

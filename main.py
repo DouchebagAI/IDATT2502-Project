@@ -3,16 +3,18 @@ import warnings
 warnings.filterwarnings("ignore")
 import gym
 
-from modelsV2.MCTS import MCTS
-from modelsV2.GameManager import GameManager
-go_env = gym.make('gym_go:go-v0', size=3, komi=0, reward_method='real')
+from MCTS.MCTS import MCTS
+from GameManager import GameManager
+go_env = gym.make('gym_go:go-v0', size=4, komi=0, reward_method='real')
+
+#print(go_env.valid_moves())
 
 gm = GameManager(go_env)
 
 mctsShit = MCTS(go_env)
 mctsGod = MCTS(go_env)
 
-gm.train(mctsShit, n=10)
+gm.train(mctsShit, n=1)
 
 gm.train(mctsGod, n=10000)
 black_wins = 0
@@ -31,10 +33,10 @@ for i in range(1000):
             tie += 1
  
 
-#print("\n\n****************")     
-#print(f"Black wins: {black_wins}")
-#print(f"White wins: {white_wins}")
-#print(f"Tie: {tie}")
+print("\n\n****************")     
+print(f"Black wins: {black_wins}")
+print(f"White wins: {white_wins}")
+print(f"Tie: {tie}")
 
 
     
