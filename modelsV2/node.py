@@ -24,9 +24,21 @@ class Node:
 
     # Formel for å hente verdien til noden (til valg av node i neste)
     def get_value(self,  type: Type, C=1.4):
+        
+        #if type is Type.BLACK:
+            #print("\nBlack")
+        #else:
+            #print("\nWhite")
+        
+        #print(f"v/n: {self.v / self.n}")
+        #print(f"explo: {C * np.sqrt(np.log(self.getN()) / self.n)}")
+        #print(f"explo 2: {np.sqrt(np.log(self.getN()) / self.n)}")
+        
         if type == Type.BLACK:
+            #print(f"Val: {self.v / self.n + C * np.sqrt(np.log(self.getN()) / self.n)}")
             return self.v / self.n + C * np.sqrt(np.log(self.getN()) / self.n)
         else:
+            #print(f"Val: {(-1)*(self.v / self.n - C * np.sqrt(np.log(self.getN()) / self.n))}")
             return (-1)*(self.v / self.n - C * np.sqrt(np.log(self.getN()) / self.n))
 
     # Gets parents n's

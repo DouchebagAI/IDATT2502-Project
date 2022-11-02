@@ -29,7 +29,7 @@ class GameManager:
                     white_wins += 1
                 case _:
                     tie += 1
-
+            print(f"Winner: {self.env.winner()}")
             mcts.backpropagate(mcts.currentNode, self.env.winner())
             
         print(f"Black wins: {black_wins}")

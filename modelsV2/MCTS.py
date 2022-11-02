@@ -56,6 +56,7 @@ class MCTS:
         else:
             new_node = Node(node, action)
             node.children.update({(action, new_node)})
+            print(f"action: {action}")
             self.currentNode = new_node
             self.stage = Stage.SIMULATION
         return self.currentNode.action
