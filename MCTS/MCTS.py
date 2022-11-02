@@ -1,5 +1,7 @@
 from MCTS.Node import Node, Type
 from enum import Enum
+import copy
+
 
 class Stage(Enum):
     TRAVERSE = 1
@@ -11,7 +13,7 @@ class MCTS:
         self.moveCount = 0
         self.env = env
         # Root node for MCTS
-        self.R = Node(None, None)
+        self.R = Node(None, None, env.get_state())
         self.currentNode = self.R
         self.stage = Stage.TRAVERSE
         # Number of nodes in the tree 
@@ -56,6 +58,8 @@ class MCTS:
     # If there is space for a new node, a new node is added to the current node
     # returns the action og the new node
     def expand(self):
+        # Copy environment
+        
         action = self.rollout_policy()
         valid_moves = self.env.valid_moves()
         for index in range(len(valid_moves)):
@@ -63,8 +67,17 @@ class MCTS:
                 new_node = Node(self.currentNode, index)
                 self.currentNode.children.update({(index, new_node)})
                 self.node_count += 1
+                #For each new node, simulate the game and backpropagate the result 20 times
+                for i in range(20):
+                    env_copy = copy.copy(self.env)
+                    done = False
+                    while not done:
+                        state, reward, done, info = env_copy.step(self.rollout_policy())
+                    self.backpropagate(new_node, env_copy.winner())
+                    self.currentNode = new_node
+
         #print(f"action: {action}")
-        self.currentNode = self.currentNode.children[action]
+        self.currentNode = self.currentNode.best_child(Type.BLACK)
         self.node_count += 1
         self.stage = Stage.SIMULATION
             # Legg til barn for alle valid moves
