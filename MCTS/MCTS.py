@@ -13,7 +13,7 @@ class MCTS:
         self.moveCount = 0
         self.env = env
         # Root node for MCTS
-        self.R = Node(None, None, env.get_state())
+        self.R = Node(None, None)
         self.currentNode = self.R
         self.stage = Stage.TRAVERSE
         # Number of nodes in the tree 
@@ -62,6 +62,7 @@ class MCTS:
         
         action = self.rollout_policy()
         valid_moves = self.env.valid_moves()
+        parent = self.currentNode
         for index in range(len(valid_moves)):
             if index not in self.currentNode.children.keys() and valid_moves[index] == 1.0:
                 new_node = Node(self.currentNode, index)
@@ -69,19 +70,19 @@ class MCTS:
                 self.node_count += 1
                 #For each new node, simulate the game and backpropagate the result 20 times
                 for i in range(20):
-                    env_copy = copy.copy(self.env)
+                    env_copy = copy.deepcopy(self.env)
                     done = False
                     while not done:
-                        state, reward, done, info = env_copy.step(self.rollout_policy())
+                        a = env_copy.uniform_random_action()
+                        state, reward, done, info = env_copy.step(a)
                     self.backpropagate(new_node, env_copy.winner())
-                    self.currentNode = new_node
+                    self.currentNode = parent
 
         #print(f"action: {action}")
         self.currentNode = self.currentNode.best_child(Type.BLACK)
         self.node_count += 1
         self.stage = Stage.SIMULATION
             # Legg til barn for alle valid moves
-                            
         return self.currentNode.action
 
 

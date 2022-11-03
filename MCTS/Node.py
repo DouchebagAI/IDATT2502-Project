@@ -6,7 +6,7 @@ class Type(Enum):
     WHITE = 1
 
 class Node:
-    def __init__(self, parent, action, state, v=0, n=0):
+    def __init__(self, parent, action, v=0, n=0):
         self.action = action
         # The value of the node
         self.v = v
@@ -14,7 +14,7 @@ class Node:
         self.n = n
         self.parent = parent
         self.children = {}
-        self.state = state
+
 
     # Gets the absolute value of the node
     def get_value(self,  type: Type, C=1.4):
