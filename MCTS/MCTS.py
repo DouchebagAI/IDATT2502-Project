@@ -33,10 +33,8 @@ class MCTS:
     def tree_policy(self, node: Node):
         if len(node.children) != 0:
             # Svart er partall, hvit oddetall
-            if self.moveCount % 2 == 0:
-                return self.traverse_step(Type.BLACK, node)
-            else:
-                return self.traverse_step(Type.WHITE, node)
+            return self.traverse_step(self.get_type(), node)
+
         else:
             # Om ingen barn som oppfyller krav finnes, 
             # lager vi et nytt barn med en random action
@@ -59,32 +57,38 @@ class MCTS:
     # returns the action og the new node
     def expand(self):
         # Copy environment
-        
-        action = self.rollout_policy()
         valid_moves = self.env.valid_moves()
-        parent = self.currentNode
         for index in range(len(valid_moves)):
             if index not in self.currentNode.children.keys() and valid_moves[index] == 1.0:
                 new_node = Node(self.currentNode, index)
                 self.currentNode.children.update({(index, new_node)})
                 self.node_count += 1
                 #For each new node, simulate the game and backpropagate the result 20 times
-                for i in range(20):
-                    env_copy = copy.deepcopy(self.env)
-                    done = False
-                    while not done:
-                        a = env_copy.uniform_random_action()
-                        state, reward, done, info = env_copy.step(a)
-                    self.backpropagate(new_node, env_copy.winner())
-                    self.currentNode = parent
-
+                self.simulate(new_node, 5)
         #print(f"action: {action}")
-        self.currentNode = self.currentNode.best_child(Type.BLACK)
+        self.currentNode = self.currentNode.best_child(self.get_type())
         self.node_count += 1
         self.stage = Stage.SIMULATION
             # Legg til barn for alle valid moves
         return self.currentNode.action
 
+    def get_type(self):
+        return Type.BLACK if self.moveCount % 2 == 0 else Type.WHITE
+
+    def simulate(self, node: Node, n = 5):
+        env_copy = copy.deepcopy(self.env)
+        state, reward, done, info = env_copy.step(node.action)
+        if done:
+            self.backpropagate(node, env_copy.winner())
+            return
+        original = copy.deepcopy(env_copy)
+        for i in range(n):
+            env_copy = copy.deepcopy(original)
+            done = False
+            while not done:
+                a = env_copy.uniform_random_action()
+                state, reward, done, info = env_copy.step(a)
+            self.backpropagate(node, env_copy.winner())
 
     def rollout_policy(self):
         return self.env.uniform_random_action()
@@ -94,9 +98,7 @@ class MCTS:
             node.update_node(v)
             node = node.parent
         node.n += 1
-        self.currentNode = node
-        self.moveCount = 0
-        self.stage = Stage.TRAVERSE
+        return node
 
     def opponent_turn_update(self, action):
         if action in self.currentNode.children.keys():
@@ -108,6 +110,12 @@ class MCTS:
         
         self.moveCount += 1
 
+    def reset(self):
+        self.moveCount = 0
+        self.stage = Stage.TRAVERSE
+        self.currentNode = self.R
+
     # Metode for å visualisere treet
     def print_tree(self):
         self.R.print_tree()
+

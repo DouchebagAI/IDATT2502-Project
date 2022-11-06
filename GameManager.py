@@ -1,5 +1,5 @@
 from MCTS.MCTS import MCTS, Stage
-
+from MCTS.Node import Type, Node
 class GameManager:
     def __init__(self, env):
         self.env = env
@@ -13,7 +13,7 @@ class GameManager:
         tie = 0
         
         for i in range(n):
-            if i % 1000 == 0: print(f"Training round {i}")
+            if i % 10 == 0: print(f"Training round {i}")
             # Nullstiller brettet
             self.env.reset()
             done = False
@@ -30,10 +30,9 @@ class GameManager:
                     white_wins += 1
                 case _:
                     tie += 1
-            #print(f"Winner: {self.env.winner()}")
-            #if mcts.stage is Stage.TRAVERSE:
-                #print(mcts.currentNode)
+
             mcts.backpropagate(mcts.currentNode, self.env.winner())
+            mcts.reset()
             
             
         print(f"Black wins: {black_wins}")
@@ -63,11 +62,11 @@ class GameManager:
             mcts.opponent_turn_update(action)
         self.print_winner()
         
-    def test(self, mcts1, mcts2):
+    def test(self, mcts1:MCTS, mcts2:MCTS):
         # Same logic as in training, but instead user takes action when whites turn
         self.env.reset()
-        mcts1.currentNode = mcts1.R
-        mcts2.currentNode = mcts2.R
+        mcts1.reset()
+        mcts2.reset()
         while not self.env.game_ended():
             action = mcts1.take_turn()
             state, reward, done, info = self.env.step(action)
@@ -79,8 +78,6 @@ class GameManager:
             action = mcts2.take_turn()
             state, reward, done, info = self.env.step(action)
             mcts1.opponent_turn_update(action)
-        mcts1.stage = Stage.TRAVERSE
-        mcts2.stage = Stage.TRAVERSE
         return self.env.winner()
 
     def print_winner(self):

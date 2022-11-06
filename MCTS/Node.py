@@ -53,7 +53,8 @@ class Node:
 
     # To string method
     def __str__(self):
-        return f" v: {self.get_value(Type.BLACK).__round__(2)}, n: {self.n}, N: {self.getN()}, a: {self.action}, parent: {self.parent.action if self.parent != None else 'Root'}"
+        return f" v: {self.get_value(Type.BLACK).__round__(2)} / {self.get_value(Type.WHITE).__round__(2)}" \
+               f", n: {self.n}, N: {self.getN()}, a: {self.action}, parent: {self.parent.action if self.parent != None else 'Root'}"
 
     # Prints a node, indendet by the depth
     def print_node(self, depth):
