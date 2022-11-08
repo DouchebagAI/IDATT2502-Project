@@ -5,7 +5,7 @@ import gym
 
 from MCTS.MCTSAdrian import MCTS
 from GameManager import GameManager
-go_env = gym.make('gym_go:go-v0', size=3, komi=0, reward_method='real')
+go_env = gym.make('gym_go:go-v0', size=5, komi=0, reward_method='real')
 
 #print(go_env.valid_moves())
 
@@ -14,10 +14,10 @@ gm = GameManager(go_env)
 mctsShit = MCTS(go_env)
 mctsGod = MCTS(go_env)
 
-gm.train(mctsShit, n=1000)
+gm.train(mctsShit, n=100)
 mctsShit.print_tree()
 
-gm.train(mctsGod, n=10000)
+gm.train(mctsGod, n=1000)
 black_wins = 0
 white_wins = 0
 tie = 0

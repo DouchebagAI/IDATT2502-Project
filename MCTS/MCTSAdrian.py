@@ -2,6 +2,9 @@ from MCTS.Node import Node, Type
 from enum import Enum
 import copy
 
+
+import time
+
 class MCTS:
     
     def __init__(self, env):
@@ -11,13 +14,10 @@ class MCTS:
         self.current_node = self.R
         self.node_count = 0
 
-
     def take_turn(self):
         action : int
         if len(self.current_node.children) == 0:
             action = self.expand()
-        elif self.current_node.n == 5:
-            action = self.env.uniform_random_action()
         else:
             self.current_node = self.current_node.best_child(self.get_type())
             action =  self.current_node.action
@@ -29,19 +29,29 @@ class MCTS:
         for move in range(len(valid_moves)):
              if move not in self.current_node.children.keys() and valid_moves[move] == 1.0:
                 new_node = Node(self.current_node, move)
-                simulated_node = self.simulate(new_node, 5)
-                self.current_node.children.update({(move, simulated_node)})
+                self.current_node.children.update({(move, new_node)})
                 self.node_count += 1
+        
+        start = time.time()
+        index = 0
+        while(time.time()- start < 0.001):
+            if(index == len(self.current_node.children)):
+                index = 0
+            action = list(self.current_node.children.keys())[index]
+            node = self.current_node.children[action]
+            simulated_node = self.simulate(node)
+            self.current_node.children.update({(simulated_node.action, simulated_node)})
+            index += 1
+            
         self.current_node = self.current_node.best_child(self.get_type())
         return self.current_node.action
            
-    def simulate(self, node, numberOfSimulations):
-        for _ in range(numberOfSimulations):
-            env_copy = copy.deepcopy(self.env)
-            _, _, done, _ = env_copy.step(node.action)
-            while not done:
-                _, _, done, _ = env_copy.step(env_copy.uniform_random_action())
-            self.backpropagate(node, env_copy.winner())
+    def simulate(self, node):
+        env_copy = copy.deepcopy(self.env)
+        _, _, done, _ = env_copy.step(node.action)
+        while not done:
+            _, _, done, _ = env_copy.step(env_copy.uniform_random_action())
+        self.backpropagate(node, env_copy.winner())
         return node
             
     def backpropagate(self, node: Node, v):
