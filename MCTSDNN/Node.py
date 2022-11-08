@@ -6,9 +6,10 @@ class Type(Enum):
     WHITE = 1
 
 class Node:
-    def __init__(self, parent, action, v=0, n=0):
+    def __init__(self, parent, action,state = [], v=0, n=0):
         self.action = action
         # The value of the node
+        self.state = state
         self.v = v
         # Number of visits
         self.n = n
@@ -24,6 +25,12 @@ class Node:
             return self.v / self.n + C * np.sqrt(2*np.log(self.getN()) / self.n)
         else:
             return (-1)*(self.v / self.n - C * np.sqrt(2*np.log(self.getN()) / self.n))
+
+    def get_value_default(self, type, C = 1.4):
+        if type == Type.BLACK:
+            return self.v / self.n + C * np.sqrt(2*np.log(self.getN()) / self.n)
+        else:
+            return (self.v / self.n - C * np.sqrt(2*np.log(self.getN()) / self.n))
 
     # Retuns the number of visists of the parent
     def getN(self):

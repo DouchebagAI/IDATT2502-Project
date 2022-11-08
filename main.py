@@ -3,42 +3,56 @@ import warnings
 warnings.filterwarnings("ignore")
 import gym
 
-from MCTS.MCTSAdrian import MCTS
+from MCTSDNN.MCTSDNN import MCTSDNN
 from GameManager import GameManager
-go_env = gym.make('gym_go:go-v0', size=5, komi=0, reward_method='real')
+go_env = gym.make('gym_go:go-v0', size=3, komi=0, reward_method='real')
 
 #print(go_env.valid_moves())
 
 gm = GameManager(go_env)
 
-mctsShit = MCTS(go_env)
-mctsGod = MCTS(go_env)
 
-gm.train(mctsShit, n=100)
-mctsShit.print_tree()
+player10 = MCTSDNN(go_env)
+player10.train(1)
+player100 = MCTSDNN(go_env)
+player100.train(1)
 
-gm.train(mctsGod, n=1000)
-black_wins = 0
-white_wins = 0
-tie = 0
-mctsGod.print_tree()
 
-for i in range(100):
-    print(f"Match {i}")
-    val = gm.test(mctsShit, mctsGod)
-    match val: 
-        case 1:
-            black_wins += 1
-        case -1:
-            white_wins += 1
-        case _:
-            tie += 1
- 
+print(gm.test(player10, player100))
 
-print("\n\n****************")     
-print(f"Black wins: {black_wins}")
-print(f"White wins: {white_wins}")
-print(f"Tie: {tie}")
+"""
+for i in range(5): 
+    mcts = MCTSDNN(go_env)
+    mcts.train_simulate
+    mctsIterations.append(mcts)
+
+for index in range(len(mctsIterations)-1):
+    best_wins = 0
+    other_wins = 0
+    tie = 0
+    for _ in range(10):
+        outcome = gm.test(mctsIterations[index], mctsIterations[len(mctsIterations)-1])
+        match outcome: 
+            case 1:
+                other_wins += 1
+            case -1:
+                best_wins += 1
+            case _:
+                tie += 1
+        outcome = gm.test(mctsIterations[len(mctsIterations)-1], mctsIterations[index])
+        match outcome: 
+            case 1:
+                best_wins += 1
+            case -1:
+                other_wins += 1
+            case _:
+                tie += 1 
+    print(f"round: {index}, "f"Best wins: {best_wins}", f"Other wins: {other_wins}", f"Tie: {tie}")
+        
+        """
+        
+
+
 
 
     

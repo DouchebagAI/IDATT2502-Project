@@ -34,9 +34,7 @@ class MCTS:
         
         start = time.time()
         index = 0
-        while(time.time()- start < 0.001):
-            if(index == len(self.current_node.children)):
-                index = 0
+        while(index < len(self.current_node.children)):
             action = list(self.current_node.children.keys())[index]
             node = self.current_node.children[action]
             simulated_node = self.simulate(node)
