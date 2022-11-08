@@ -31,7 +31,7 @@ class GameManager:
                 case _:
                     tie += 1
 
-            mcts.backpropagate(mcts.currentNode, self.env.winner())
+            mcts.backpropagate(mcts.current_node, self.env.winner())
             mcts.reset()
             
             
@@ -49,8 +49,8 @@ class GameManager:
         self.env.reset()
         valid = False
         while not self.env.game_ended():
-            mcts.traverse_policy(mcts.currentNode)
-            state, reward, done, info = self.env.step(mcts.currentNode.action)
+            mcts.traverse_policy(mcts.current_node)
+            state, reward, done, info = self.env.step(mcts.current_node.action)
             while not valid:
                 try:
                     action = self.env.render(mode="human")
