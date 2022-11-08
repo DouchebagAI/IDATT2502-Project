@@ -7,16 +7,18 @@ from MCTSDNN.MCTSDNN import MCTSDNN
 from GameManager import GameManager
 go_env = gym.make('gym_go:go-v0', size=3, komi=0, reward_method='real')
 
+go_env.__sizeof__()
 #print(go_env.valid_moves())
 
 gm = GameManager(go_env)
 
 
 player10 = MCTSDNN(go_env)
-player10.train(1)
+player10.train(10)
+player10.print_tree()
 player100 = MCTSDNN(go_env)
-player100.train(1)
-
+player100.train(30)
+player100.print_tree()
 
 print(gm.test(player10, player100))
 

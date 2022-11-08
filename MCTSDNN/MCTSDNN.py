@@ -4,6 +4,8 @@ import torch
 import torch.nn as nn
 import copy
 import numpy as np
+import gym
+
 
 class GoNN(nn.Module):
     def __init__(self, size=3):
@@ -12,38 +14,30 @@ class GoNN(nn.Module):
         # Conv
         # Relu
         self.logits = nn.Sequential(
-            nn.Conv2d(size**2+1, size**3+size, kernel_size=5, padding=2),
-            nn.ReLU(),
+            nn.Linear(9, 36),
+            nn.Linear(36, 36),
+            nn.Linear(36, 9)
+            #nn.ReLU(),
             #nn.Dropout(0.2),
-            nn.MaxPool2d(kernel_size=2),
-            nn.Conv2d(32, 64, kernel_size=5, padding=2),
-            nn.ReLU(),
+            #nn.MaxPool2d(kernel_size=2),
+            #nn.Conv2d(32, 64, kernel_size=5, padding=2),
+            #nn.ReLU(),
             #nn.Dropout(0.2),
-            nn.MaxPool2d(kernel_size=2),
-            nn.Flatten(),
-            nn.Linear(64 * 7*7, 1024),
-            nn.Flatten(),
-            nn.Linear(1*1024, 10)
+            #nn.Conv2d(64, 128, kernel_size=5, padding=2),
+            #nn.ReLU(),
+            #nn.MaxPool2d(kernel_size=2),
+            #nn.Flatten(),
+            #nn.Linear(64, 1024),
+            #nn.Flatten(),
+            #nn.Linear(1*1024, 10)
         )
-        self.dl1 = nn.Linear(size**2, size**3)
-        self.dl2 = nn.Linear(size**3, size**3)
-        self.output_layer = nn.Linear(size**3, size**2+1)
-
-    def logits(self, x):
-        x = self.dl1(x)
-        x = torch.relu(x)
-        x = self.dl2(x)
-        x = torch.relu(x)
-        x = self.output_layer(x)
-        x = torch.sigmoid(x)
-        return x
 
     def f(self, x):
         return torch.softmax(self.logits(x), dim=1)
 
     # Cross Entropy loss
     def loss(self, x, y):
-        return nn.functional.binary_cross_entropy_with_logits(self.logits(x), y)
+        return nn.functional.cross_entropy(self.logits(x), y)
 
     # Accuracy
     def accuracy(self, x, y):
@@ -51,7 +45,7 @@ class GoNN(nn.Module):
 
 class MCTSDNN:
 
-    def __init__(self, env):
+    def __init__(self, env : gym.Env):
         self.size = 3
         self.model = GoNN(self.size)
         self.move_count = 0
@@ -59,6 +53,7 @@ class MCTSDNN:
         self.R = Node(None, None)
         self.current_node = self.R
         self.node_count = 0
+        self.states = {}
 
     def take_turn(self):
         action : int
@@ -73,7 +68,7 @@ class MCTSDNN:
     def take_turn_play(self):
         action : int
         if len(self.current_node.children) == 0:
-            action = self.play_policy(self.current_node)
+            action = self.play_policy_greedy(self.current_node)
         else:
             self.current_node = self.current_node.best_child(self.get_type())
             action =  self.current_node.action
@@ -82,25 +77,51 @@ class MCTSDNN:
 
     def expand(self):
         valid_moves = self.env.valid_moves()
+        # Create all valid children nodes for
+        
         for move in range(len(valid_moves)):
              if move not in self.current_node.children.keys() and valid_moves[move] == 1.0:
                 new_node = Node(self.current_node, move)
                 self.current_node.children.update({(move, new_node)})
                 self.node_count += 1
         
+        print(self.current_node.children.keys())
         index = 0
         while(index < len(self.current_node.children)):
+            print("simulating index: ", index)
             action = list(self.current_node.children.keys())[index]
             node = self.current_node.children[action]
             simulated_node = self.train_simulate(node)
             self.current_node.children.update({(simulated_node.action, simulated_node)})
             index += 1
             
-        self.train_model(self.current_node)
         self.current_node = self.current_node.best_child(self.get_type())
+        
+        """
+        for i in range(100):
+            #Traversere til leaf-node
+            print("Sim round: ", i)
+            while(len(self.current_node.children) > 0):
+                self.current_node = self.current_node.best_child(self.get_type())
+            
+            #Velg beste action fra NN
+            action = self.play_policy_greedy(self.current_node)
+            #Expand
+            new_node = Node(self.current_node, action)
+            
+            self.current_node.children.update({(new_node.action, new_node)})
+            #Simulere
+            self.train_simulate(new_node) 
+            self.current_node = self.R
+                
+        while(len(self.current_node.children) > 0):
+                self.current_node = self.current_node.best_child(self.get_type())
+        """
+        
+        
         return self.current_node.action
            
-    def train(self, n = 10):
+    def train(self, n=10):
         for i in range(n):
             print(f"Training round: {i}")
             # Nullstiller brettet
@@ -112,22 +133,30 @@ class MCTSDNN:
                 _, _, done, _ = self.env.step(action)
 
             self.backpropagate(self.current_node, self.env.winner())
+            self.train_model()
             self.reset()
+            
     
-    def play_policy(self, node: Node):
+    def play_policy_greedy(self, node: Node):
+        print("Greeding")
         #env_copy = copy.deepcopy(self.env)
         #state, _, _, _ = env_copy.step(node.action)
-        node.state = self.env.state()
-        x_tens = torch.tensor(node.state[0], dtype=torch.float)
-        y = self.model.f(x_tens.reshape(-1,self.size**2))
+        node.state = self.env.state()[0] - self.env.state()[1]
+        x_tens = torch.tensor(node.state, dtype=torch.float)
+        #print(x_tens[0].reshape(-1,1,self.size,self.size).float())
+        y = self.model.f(x_tens.reshape(-1,9).float())
         if self.get_type() == Type.BLACK:
             index = np.argmax(y.detach())
         else:
             index = np.argmin(y.detach())
-        print(index.item())
+        
+        valid_moves = self.env.valid_moves()
+        
+        if valid_moves[index.item()] == 0:
+            return self.env.uniform_random_action()
         #value head
             # input state- lag - splitter i to 
-                # ploicy head -> actions
+                # policy head -> actions
                 # value head -> verdi (om bra state)
                     # returnerer istedenfor å rolloute ned til terminal state
             # state probability pairs
@@ -135,46 +164,65 @@ class MCTSDNN:
             # Trene på batch
             # legge i testsdata
             # sammenligne forskjellige mpter å velge på (prob, argmax)
-
-
         return index.item() 
-
     
     def train_simulate(self, node):
         
         env_copy  = copy.deepcopy(self.env)
-        node.parent.state = env_copy.state()
+        #node.parent.state = env_copy.state()[0] - env_copy.state()[1]
+        #self.states.update({(str(env_copy.state()), node.parent)})
+        
         state, _, done, _ = env_copy.step(node.action)
     
-        node.state = state
-        
+        node.state = state[0] - state[1]
+        self.states.update({(str(state), node)})
         while not done:
+            print("Simulating")
             state, _, done, _= env_copy.step(env_copy.uniform_random_action())
-        self.backpropagate(node, env_copy.winner())
+        print
+        node = self.backpropagate(node, env_copy.winner())
         return node
-    
-    
-    def train_model(self, node: Node):
-       
-        y_train = np.zeros((self.size**2)+1)
-        for n in node.children.values():
-            y_train[n.action] = n.get_value_default(self.get_type())
 
+    def get_training_data(self):
+        x_train = []
+        print("Training data")
+        y_train = np.zeros([len(self.states.keys()), self.size**2])
+        for i in range(len(self.states.keys())):
+            for n in list(self.states.values())[i].children.values():
+                y_train[i][n.action] = n.get_value_default(self.get_type())
+            x_train.append(list(self.states.values())[i].state)
+
+        x_tens = torch.tensor(x_train, dtype=torch.float).reshape(-1, 9)
+        
+        y_tens = torch.tensor(y_train, dtype=torch.float)
+    
+        batch = 100
+        x_train_batches = torch.split(x_tens, batch)
+        y_train_batches = torch.split(y_tens, batch)
+        return x_train_batches, y_train_batches
+        
+    def train_model(self):
+        batch = 100
+        
+        x_train_batches, y_train_batches = self.get_training_data()
+        
         # Optimize: adjust W and b to minimize loss using stochastic gradient descent
         optimizer = torch.optim.Adam(self.model.parameters(), 0.001)
-        for epoch in range(5):
-            x_tens = torch.tensor(node.state, dtype=torch.float)
-            
-            y_tens = torch.tensor(y_train, dtype=torch.float)
-           
-            self.model.loss(x_tens[0].reshape(-1,self.size**2),y_tens.reshape(-1, self.size**2+1)).backward()  # Compute loss gradients
-            optimizer.step()  # Perform optimization by adjusting W and b,
-            optimizer.zero_grad()  # Clear gradients for next step
+        print("Training")
+        for _ in range(1):
+            for batch in range(len(x_train_batches)):
+                self.model.loss(x_train_batches[batch], y_train_batches[batch]).backward()  # Compute loss gradients
+                optimizer.step()  # Perform optimization by adjusting W and b,
+                optimizer.zero_grad()  # Clear gradients for next step
+
+        
 
     def backpropagate(self, node: Node, v):
+        print("Backpropagating")
         while not node.is_root():
             node.update_node(v)
             node = node.parent
+        print("found root")
         node.n += 1
         return node 
     

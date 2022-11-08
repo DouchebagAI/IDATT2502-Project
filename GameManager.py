@@ -33,6 +33,7 @@ class GameManager:
         mcts2.reset()
         while not self.env.game_ended():
             action = mcts1.take_turn_play()
+            print(action)
             _, _, _, _ = self.env.step(action)
             
             mcts2.opponent_turn_update(action)
