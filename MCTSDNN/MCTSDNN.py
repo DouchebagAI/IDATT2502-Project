@@ -85,10 +85,9 @@ class MCTSDNN:
                 self.current_node.children.update({(move, new_node)})
                 self.node_count += 1
         
-        print(self.current_node.children.keys())
         index = 0
         while(index < len(self.current_node.children)):
-            print("simulating index: ", index)
+            
             action = list(self.current_node.children.keys())[index]
             node = self.current_node.children[action]
             simulated_node = self.train_simulate(node)
@@ -138,12 +137,11 @@ class MCTSDNN:
             
     
     def play_policy_greedy(self, node: Node):
-        print("Greeding")
+        
         #env_copy = copy.deepcopy(self.env)
         #state, _, _, _ = env_copy.step(node.action)
         node.state = self.env.state()[0] - self.env.state()[1]
         x_tens = torch.tensor(node.state, dtype=torch.float)
-        #print(x_tens[0].reshape(-1,1,self.size,self.size).float())
         y = self.model.f(x_tens.reshape(-1,9).float())
         if self.get_type() == Type.BLACK:
             index = np.argmax(y.detach())
@@ -177,18 +175,19 @@ class MCTSDNN:
         node.state = state[0] - state[1]
         self.states.update({(str(state), node)})
         while not done:
-            print("Simulating")
+
             state, _, done, _= env_copy.step(env_copy.uniform_random_action())
-        print
-        node = self.backpropagate(node, env_copy.winner())
+        self.backpropagate(node, env_copy.winner())
         return node
 
     def get_training_data(self):
         x_train = []
-        print("Training data")
+        
         y_train = np.zeros([len(self.states.keys()), self.size**2])
         for i in range(len(self.states.keys())):
             for n in list(self.states.values())[i].children.values():
+                if(n.action == 9):
+                    break
                 y_train[i][n.action] = n.get_value_default(self.get_type())
             x_train.append(list(self.states.values())[i].state)
 
@@ -208,8 +207,8 @@ class MCTSDNN:
         
         # Optimize: adjust W and b to minimize loss using stochastic gradient descent
         optimizer = torch.optim.Adam(self.model.parameters(), 0.001)
-        print("Training")
-        for _ in range(1):
+        
+        for _ in range(20):
             for batch in range(len(x_train_batches)):
                 self.model.loss(x_train_batches[batch], y_train_batches[batch]).backward()  # Compute loss gradients
                 optimizer.step()  # Perform optimization by adjusting W and b,
@@ -218,11 +217,11 @@ class MCTSDNN:
         
 
     def backpropagate(self, node: Node, v):
-        print("Backpropagating")
+        
         while not node.is_root():
             node.update_node(v)
             node = node.parent
-        print("found root")
+        
         node.n += 1
         return node 
     

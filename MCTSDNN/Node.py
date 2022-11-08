@@ -36,10 +36,7 @@ class Node:
     def getN(self):
         if self.is_root():
             return self.n
-        p = self.parent
-        while not p.is_root():
-            p = self.parent
-        return p.n
+        return self.parent.n
         
 
     def is_root(self):
