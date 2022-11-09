@@ -14,22 +14,15 @@ class GoNN(nn.Module):
         # Conv
         # Relu
         self.logits = nn.Sequential(
-            nn.Linear(9, 36),
-            nn.Linear(36, 36),
-            nn.Linear(36, 10)
-            #nn.ReLU(),
-            #nn.Dropout(0.2),
+            nn.ReLU(),
+            nn.Conv2d(1, size**2, kernel_size=3, padding=2),
             #nn.MaxPool2d(kernel_size=2),
-            #nn.Conv2d(32, 64, kernel_size=5, padding=2),
-            #nn.ReLU(),
-            #nn.Dropout(0.2),
-            #nn.Conv2d(64, 128, kernel_size=5, padding=2),
-            #nn.ReLU(),
-            #nn.MaxPool2d(kernel_size=2),
-            #nn.Flatten(),
-            #nn.Linear(64, 1024),
-            #nn.Flatten(),
-            #nn.Linear(1*1024, 10)
+            #nn.Conv2d(size**2, size**3, kernel_size=3, padding=2),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2),
+            nn.Flatten(),
+            nn.Linear(36, size**4),
+            nn.Linear(1*size**4, size**2+1)
         )
 
     def f(self, x):
@@ -137,7 +130,7 @@ class MCTSDNN:
         #state, _, _, _ = env_copy.step(node.action)
         node.state = self.env.state()[0] - self.env.state()[1]
         x_tens = torch.tensor(node.state, dtype=torch.float)
-        y = self.model.f(x_tens.reshape(-1,9).float())
+        y = self.model.f(x_tens.reshape(-1, 1,self.size, self.size).float())
         if self.get_type() == Type.BLACK:
             index = np.argmax(y.detach())
         else:
@@ -185,7 +178,7 @@ class MCTSDNN:
                 y_train[i][n.action] = n.get_value_default(self.get_type())
             x_train.append(list(self.states)[i][1].state)
 
-        x_tens = torch.tensor(x_train, dtype=torch.float).reshape(-1, 9)
+        x_tens = torch.tensor(x_train, dtype=torch.float).reshape(-1,1,self.size, self.size).float()
         
         y_tens = torch.tensor(y_train, dtype=torch.float)
     
@@ -204,10 +197,13 @@ class MCTSDNN:
         
         for _ in range(40):
             for batch in range(len(x_train_batches)):
+                #print(x_train_batches[batch].shape)
+                #print(y_train_batches[batch].shape)
                 self.model.loss(x_train_batches[batch], y_train_batches[batch]).backward()  # Compute loss gradients
                 optimizer.step()  # Perform optimization by adjusting W and b,
                 optimizer.zero_grad()  # Clear gradients for next step
-            print(f"Loss: {self.model.loss(x_train_batches[batch], y_train_batches[batch])}")
+        print(f"Loss: {self.model.loss(x_train_batches[batch], y_train_batches[batch])}")
+        print(f"Accuracy: {self.model.accuracy(x_train_batches[batch], y_train_batches[batch])}")
             
 
         
@@ -235,8 +231,8 @@ class MCTSDNN:
                 _, _, done, _ = self.env.step(action)
 
             self.backpropagate(self.current_node, self.env.winner())
-            self.train_model()
             self.reset()
+        self.train_model()
     
     def opponent_turn_update(self, move):
         self.move_count += 1

@@ -19,10 +19,10 @@ gm = GameManager(go_env)
 
 player10 = MCTSDNN(go_env)
 player10.train(3)
-player10.print_tree()
+#player10.print_tree()
 player100 = MCTSDNN(go_env)
 player100.train(20)
-player100.print_tree()
+#player100.print_tree()
 
 best_wins = 0
 other_wins = 0
@@ -36,7 +36,7 @@ for i in range(100):
                 best_wins += 1
             case _:
                 tie += 1
-print(f"best_wins {best_wins} other_wins {other_wins} tie {tie}")
+print(f"white wins: {best_wins} black wins: {other_wins} tie: {tie}")
 
 
 """""""""
