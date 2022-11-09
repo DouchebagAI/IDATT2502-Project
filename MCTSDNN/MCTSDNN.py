@@ -16,7 +16,7 @@ class GoNN(nn.Module):
         self.logits = nn.Sequential(
             nn.Linear(9, 36),
             nn.Linear(36, 36),
-            nn.Linear(36, 9)
+            nn.Linear(36, 10)
             #nn.ReLU(),
             #nn.Dropout(0.2),
             #nn.MaxPool2d(kernel_size=2),
@@ -53,9 +53,12 @@ class MCTSDNN:
         self.R = Node(None, None)
         self.current_node = self.R
         self.node_count = 0
-        self.states = {}
+        self.states = []
+
 
     def take_turn(self):
+        # Hvis ingen barn, exland
+        # Hvis ikke, velg det barnet med høyest verdi
         action : int
         if len(self.current_node.children) == 0:
             action = self.expand()
@@ -66,18 +69,24 @@ class MCTSDNN:
         return action
 
     def take_turn_play(self):
+        # print(f"move count {self.move_count} type: {self.get_type()}")
+        # Hvis ingen barn, velg en greedy policy
         action : int
         if len(self.current_node.children) == 0:
             action = self.play_policy_greedy(self.current_node)
+            new_node = Node(self.current_node, action)
+            self.current_node.children.update({(action, new_node)})
+            self.current_node = new_node
         else:
             self.current_node = self.current_node.best_child(self.get_type())
             action =  self.current_node.action
+            valid_moves = self.env.valid_moves()
         self.move_count += 1
         return action
 
     def expand(self):
         valid_moves = self.env.valid_moves()
-        # Create all valid children nodes for
+        # Create all valid children nodes
         
         for move in range(len(valid_moves)):
              if move not in self.current_node.children.keys() and valid_moves[move] == 1.0:
@@ -87,10 +96,9 @@ class MCTSDNN:
         
         index = 0
         while(index < len(self.current_node.children)):
-            
             action = list(self.current_node.children.keys())[index]
             node = self.current_node.children[action]
-            simulated_node = self.train_simulate(node)
+            simulated_node = self.simulate(node)
             self.current_node.children.update({(simulated_node.action, simulated_node)})
             index += 1
             
@@ -110,7 +118,7 @@ class MCTSDNN:
             
             self.current_node.children.update({(new_node.action, new_node)})
             #Simulere
-            self.train_simulate(new_node) 
+            self.simulate(new_node) 
             self.current_node = self.R
                 
         while(len(self.current_node.children) > 0):
@@ -120,20 +128,7 @@ class MCTSDNN:
         
         return self.current_node.action
            
-    def train(self, n=10):
-        for i in range(n):
-            print(f"Training round: {i}")
-            # Nullstiller brettet
-            self.env.reset()
-            done = False
-            while not done:              
-                # Gjør et trekk
-                action = self.take_turn()
-                _, _, done, _ = self.env.step(action)
-
-            self.backpropagate(self.current_node, self.env.winner())
-            self.train_model()
-            self.reset()
+   
             
     
     def play_policy_greedy(self, node: Node):
@@ -164,7 +159,7 @@ class MCTSDNN:
             # sammenligne forskjellige mpter å velge på (prob, argmax)
         return index.item() 
     
-    def train_simulate(self, node):
+    def simulate(self, node):
         
         env_copy  = copy.deepcopy(self.env)
         #node.parent.state = env_copy.state()[0] - env_copy.state()[1]
@@ -173,23 +168,22 @@ class MCTSDNN:
         state, _, done, _ = env_copy.step(node.action)
     
         node.state = state[0] - state[1]
-        self.states.update({(str(state), node)})
+        self.states.append((state, node))
+        
         while not done:
-
             state, _, done, _= env_copy.step(env_copy.uniform_random_action())
+            
         self.backpropagate(node, env_copy.winner())
         return node
 
     def get_training_data(self):
         x_train = []
         
-        y_train = np.zeros([len(self.states.keys()), self.size**2])
-        for i in range(len(self.states.keys())):
-            for n in list(self.states.values())[i].children.values():
-                if(n.action == 9):
-                    break
+        y_train = np.zeros([len(self.states), self.size**2+1])
+        for i in range(len(self.states)):
+            for n in self.states[i][1].children.values():
                 y_train[i][n.action] = n.get_value_default(self.get_type())
-            x_train.append(list(self.states.values())[i].state)
+            x_train.append(list(self.states)[i][1].state)
 
         x_tens = torch.tensor(x_train, dtype=torch.float).reshape(-1, 9)
         
@@ -201,21 +195,22 @@ class MCTSDNN:
         return x_train_batches, y_train_batches
         
     def train_model(self):
-        batch = 100
+        #batch = 100
         
         x_train_batches, y_train_batches = self.get_training_data()
         
         # Optimize: adjust W and b to minimize loss using stochastic gradient descent
         optimizer = torch.optim.Adam(self.model.parameters(), 0.001)
         
-        for _ in range(20):
+        for _ in range(40):
             for batch in range(len(x_train_batches)):
                 self.model.loss(x_train_batches[batch], y_train_batches[batch]).backward()  # Compute loss gradients
                 optimizer.step()  # Perform optimization by adjusting W and b,
                 optimizer.zero_grad()  # Clear gradients for next step
+            print(f"Loss: {self.model.loss(x_train_batches[batch], y_train_batches[batch])}")
+            
 
         
-
     def backpropagate(self, node: Node, v):
         
         while not node.is_root():
@@ -228,18 +223,34 @@ class MCTSDNN:
     def get_type(self):
         return Type.BLACK if self.move_count % 2 == 0 else Type.WHITE
     
+    def train(self, n=10):
+        for i in range(n):
+            print(f"Training round: {i}")
+            # Nullstiller brettet
+            self.env.reset()
+            done = False
+            while not done:              
+                # Gjør et trekk
+                action = self.take_turn()
+                _, _, done, _ = self.env.step(action)
+
+            self.backpropagate(self.current_node, self.env.winner())
+            self.train_model()
+            self.reset()
+    
     def opponent_turn_update(self, move):
+        self.move_count += 1
         if move in self.current_node.children.keys():
             self.current_node = self.current_node.children[move]
         else:
             new_node = Node(self.current_node, move)
             self.current_node.children.update({(move, new_node)})
             self.current_node = new_node
-        self.moveCount += 1
         
         
+
     def reset(self):
-        self.moveCount = 0
+        self.move_count = 0
         self.current_node = self.R
         
     # Metode for å visualisere treet

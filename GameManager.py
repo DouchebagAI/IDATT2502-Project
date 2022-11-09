@@ -31,19 +31,22 @@ class GameManager:
         self.env.reset()
         mcts1.reset()
         mcts2.reset()
-        while not self.env.game_ended():
+        done = False
+        while not done:
             action = mcts1.take_turn_play()
-            print(action)
-            _, _, _, _ = self.env.step(action)
+            # print(action)
+            _, _, done, _ = self.env.step(action)
             
             mcts2.opponent_turn_update(action)
                         
-            if self.env.game_ended():
+            if done:
                 break
             
             action = mcts2.take_turn_play()
-            _, _, _, _ = self.env.step(action)
+            _, _, done, _ = self.env.step(action)
             mcts1.opponent_turn_update(action)
+        mcts1.backpropagate(mcts1.current_node, self.env.winner())
+        mcts2.backpropagate(mcts2.current_node, self.env.winner())
         return self.env.winner()
 
     def print_winner(self):

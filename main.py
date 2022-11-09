@@ -11,13 +11,17 @@ go_env.__sizeof__()
 #print(go_env.valid_moves())
 
 gm = GameManager(go_env)
-
+#go_env.reset()
+#state, reward, done, info = go_env.step(9)
+#print(state)
+#print(reward)
+#print(info)
 
 player10 = MCTSDNN(go_env)
-player10.train(10)
+player10.train(3)
 player10.print_tree()
 player100 = MCTSDNN(go_env)
-player100.train(50)
+player100.train(20)
 player100.print_tree()
 
 best_wins = 0
@@ -34,7 +38,8 @@ for i in range(100):
                 tie += 1
 print(f"best_wins {best_wins} other_wins {other_wins} tie {tie}")
 
-"""
+
+"""""""""
 for i in range(5): 
     mcts = MCTSDNN(go_env)
     mcts.train_simulate
