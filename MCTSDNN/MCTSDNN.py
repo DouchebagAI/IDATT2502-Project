@@ -1,3 +1,6 @@
+import math
+import random
+
 from MCTSDNN.Node import Node, Type
 from enum import Enum
 import torch
@@ -13,15 +16,15 @@ class GoCNN(nn.Module):
         # Conv
         # Relu
         self.logits = nn.Sequential(
-            nn.ReLU(),
-            nn.Conv2d(6, size**2, kernel_size=3, padding=2),
+            nn.Conv2d(6, size**2, kernel_size=5, padding=2),
             nn.ReLU(),
             #nn.MaxPool2d(kernel_size=2),
-            nn.Conv2d(size**2, size**3, kernel_size=3, padding=2),
+            nn.Conv2d(size**2, size**3, kernel_size=5, padding=2),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2),
             nn.Flatten(),
-            nn.Linear(1024, size**4),
+            nn.Linear(256, size**4),
+            nn.Flatten(),
             nn.Linear(1*size**4, size**2+1)
         )
 
@@ -44,11 +47,11 @@ class GoNN(nn.Module):
         # Relu
         self.logits = nn.Sequential(
             nn.ReLU(),
-            nn.Conv2d(6, size**2, kernel_size=3, padding=2),
+            nn.Conv2d(6, size**2, kernel_size=5, padding=2),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2),
             nn.Flatten(),
-            nn.Linear(144, size**4),
+            nn.Linear(64, size**4),
             nn.Linear(1*size**4, size**2+1)
         )
 
@@ -110,7 +113,7 @@ class MCTSDNN:
     def expand(self):
         
         # Create all valid children nodes
-        """
+        valid_moves = self.env.valid_moves()
         for move in range(len(valid_moves)):
              if move not in self.current_node.children.keys() and valid_moves[move] == 1.0:
                 new_node = Node(self.current_node, move)
@@ -137,13 +140,13 @@ class MCTSDNN:
         self.current_node.children.update({(new_node.action, new_node)})
         for i in range(100):
             #Simulere 100 ganger
-            print("Sim round: ", i)
+            #print("Sim round: ", i)
             self.simulate(new_node)
             
         
         self.current_node = new_node
         
-    
+        """
         return self.current_node.action
            
    
@@ -198,39 +201,42 @@ class MCTSDNN:
 
     def get_training_data(self):
         x_train = []
-        
+        random.shuffle(self.states)
         y_train = np.zeros([len(self.states), self.size**2+1])
+
         for i in range(len(self.states)):
             for n in self.states[i][1].children.values():
                 y_train[i][n.action] = n.get_value_default(self.get_type())
             x_train.append(list(self.states)[i][1].state)
 
+        limit = math.floor(len(x_train)/3)
         x_tens = torch.tensor(x_train, dtype=torch.float).reshape(-1,6,self.size, self.size).float()
-        
+
         y_tens = torch.tensor(y_train, dtype=torch.float)
-    
-        batch = 100
-        x_train_batches = torch.split(x_tens, batch)
-        y_train_batches = torch.split(y_tens, batch)
-        return x_train_batches, y_train_batches
+        x_test = x_tens[limit*2:]
+        y_test = y_tens[limit*2:]
+        batch = 200
+        x_train_batches = torch.split(x_tens[:limit*2], batch)
+        y_train_batches = torch.split(y_tens[:limit*2], batch)
+        return x_train_batches, y_train_batches, x_test, y_test
         
     def train_model(self):
         #batch = 100
         
-        x_train_batches, y_train_batches = self.get_training_data()
+        x_train_batches, y_train_batches, x_test, y_test = self.get_training_data()
         
         # Optimize: adjust W and b to minimize loss using stochastic gradient descent
         optimizer = torch.optim.Adam(self.model.parameters(), 0.001)
         
-        for _ in range(40):
+        for _ in range(20):
             for batch in range(len(x_train_batches)):
                 #print(x_train_batches[batch].shape)
                 #print(y_train_batches[batch].shape)
                 self.model.loss(x_train_batches[batch], y_train_batches[batch]).backward()  # Compute loss gradients
                 optimizer.step()  # Perform optimization by adjusting W and b,
                 optimizer.zero_grad()  # Clear gradients for next step
-        print(f"Loss: {self.model.loss(x_train_batches[batch], y_train_batches[batch])}")
-        print(f"Accuracy: {self.model.accuracy(x_train_batches[batch], y_train_batches[batch])}")
+        print(f"Loss: {self.model.loss(x_test, y_test)}")
+        print(f"Accuracy: {self.model.accuracy(x_test, y_test)}")
             
 
         
@@ -259,10 +265,11 @@ class MCTSDNN:
 
             self.backpropagate(self.current_node, self.env.winner())
             self.reset()
-            if i % 5 is 0:
+            if i % 10 is 0:
                 self.train_model()
         
         self.train_model()
+        print(len(self.states))
     
     def opponent_turn_update(self, move):
         self.move_count += 1
