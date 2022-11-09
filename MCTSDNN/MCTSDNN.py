@@ -6,6 +6,35 @@ import copy
 import numpy as np
 import gym
 
+class GoCNN(nn.Module):
+    def __init__(self, size=3):
+        super().__init__()
+        self.size = size
+        # Conv
+        # Relu
+        self.logits = nn.Sequential(
+            nn.ReLU(),
+            nn.Conv2d(6, size**2, kernel_size=3, padding=2),
+            nn.ReLU(),
+            #nn.MaxPool2d(kernel_size=2),
+            nn.Conv2d(size**2, size**3, kernel_size=3, padding=2),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2),
+            nn.Flatten(),
+            nn.Linear(243, size**4),
+            nn.Linear(1*size**4, size**2+1)
+        )
+
+    def f(self, x):
+        return torch.softmax(self.logits(x), dim=1)
+
+    # Cross Entropy loss
+    def loss(self, x, y):
+        return nn.functional.cross_entropy(self.logits(x), y)
+
+    # Accuracy
+    def accuracy(self, x, y):
+        return torch.mean(torch.eq(self.f(x).argmax(1), y.argmax(1)).float())
 
 class GoNN(nn.Module):
     def __init__(self, size=3):
@@ -15,9 +44,7 @@ class GoNN(nn.Module):
         # Relu
         self.logits = nn.Sequential(
             nn.ReLU(),
-            nn.Conv2d(1, size**2, kernel_size=3, padding=2),
-            #nn.MaxPool2d(kernel_size=2),
-            #nn.Conv2d(size**2, size**3, kernel_size=3, padding=2),
+            nn.Conv2d(6, size**2, kernel_size=3, padding=2),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2),
             nn.Flatten(),
@@ -38,9 +65,12 @@ class GoNN(nn.Module):
 
 class MCTSDNN:
 
-    def __init__(self, env : gym.Env):
-        self.size = 3
-        self.model = GoNN(self.size)
+    def __init__(self, env : gym.Env, size, model):
+        self.size = size
+        if model is "Go":
+            self.model = GoNN(self.size)
+        if model is "Go2":
+            self.model = GoCNN(self.size)
         self.move_count = 0
         self.env = env
         self.R = Node(None, None)
@@ -66,7 +96,7 @@ class MCTSDNN:
         # Hvis ingen barn, velg en greedy policy
         action : int
         if len(self.current_node.children) == 0:
-            action = self.play_policy_greedy(self.current_node)
+            action = self.play_policy_greedy(self.env)
             new_node = Node(self.current_node, action)
             self.current_node.children.update({(action, new_node)})
             self.current_node = new_node
@@ -124,22 +154,22 @@ class MCTSDNN:
    
             
     
-    def play_policy_greedy(self, node: Node):
+    def play_policy_greedy(self, env):
         
         #env_copy = copy.deepcopy(self.env)
         #state, _, _, _ = env_copy.step(node.action)
-        node.state = self.env.state()[0] - self.env.state()[1]
-        x_tens = torch.tensor(node.state, dtype=torch.float)
-        y = self.model.f(x_tens.reshape(-1, 1,self.size, self.size).float())
+        #node.state = self.env.state()[0] - self.env.state()[1
+        x_tens = torch.tensor(env.state(), dtype=torch.float)
+        y = self.model.f(x_tens.reshape(-1, 6,self.size, self.size).float())
         if self.get_type() == Type.BLACK:
             index = np.argmax(y.detach())
         else:
             index = np.argmin(y.detach())
         
-        valid_moves = self.env.valid_moves()
+        valid_moves = env.valid_moves()
         
-        if valid_moves[index.item()] == 0:
-            return self.env.uniform_random_action()
+        if valid_moves[index.item()] == 0.0:
+            return env.uniform_random_action()
         #value head
             # input state- lag - splitter i to 
                 # policy head -> actions
@@ -160,10 +190,12 @@ class MCTSDNN:
         
         state, _, done, _ = env_copy.step(node.action)
     
-        node.state = state[0] - state[1]
+        #node.state = state[0] - state[1]
+        node.state = state
         self.states.append((state, node))
         
         while not done:
+            action = self.play_policy_greedy(env_copy)
             state, _, done, _= env_copy.step(env_copy.uniform_random_action())
             
         self.backpropagate(node, env_copy.winner())
@@ -178,7 +210,7 @@ class MCTSDNN:
                 y_train[i][n.action] = n.get_value_default(self.get_type())
             x_train.append(list(self.states)[i][1].state)
 
-        x_tens = torch.tensor(x_train, dtype=torch.float).reshape(-1,1,self.size, self.size).float()
+        x_tens = torch.tensor(x_train, dtype=torch.float).reshape(-1,6,self.size, self.size).float()
         
         y_tens = torch.tensor(y_train, dtype=torch.float)
     
@@ -232,6 +264,9 @@ class MCTSDNN:
 
             self.backpropagate(self.current_node, self.env.winner())
             self.reset()
+            if i % 5 is 0:
+                self.train_model()
+        
         self.train_model()
     
     def opponent_turn_update(self, move):

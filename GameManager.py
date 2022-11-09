@@ -11,10 +11,11 @@ class GameManager:
     def play_as_white(self, mcts):
         # Same logic as in training, but instead user takes action when whites turn
         self.env.reset()
+        mcts.reset()
         valid = False
         while not self.env.game_ended():
          
-            state, reward, done, info = self.env.step(mcts.take_turn())
+            state, reward, done, info = self.env.step(mcts.take_turn_play())
             while not valid:
                 try:
                     action = self.env.render(mode="human")
