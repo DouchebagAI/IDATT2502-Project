@@ -19,10 +19,10 @@ gm = GameManager(go_env)
 #print(info)
 
 player10 = MCTSDNN(go_env, size, "Go2")
-player10.train(30)
+player10.train(2)
 #player10.print_tree()
 player100 = MCTSDNN(go_env, size, "Go")
-player100.train(30)
+player100.train(10)
 
 #gm.play_as_white(player100)
 #player100.print_tree()

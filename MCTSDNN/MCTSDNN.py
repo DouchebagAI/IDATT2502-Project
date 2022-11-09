@@ -21,7 +21,7 @@ class GoCNN(nn.Module):
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2),
             nn.Flatten(),
-            nn.Linear(243, size**4),
+            nn.Linear(1024, size**4),
             nn.Linear(1*size**4, size**2+1)
         )
 
@@ -48,7 +48,7 @@ class GoNN(nn.Module):
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2),
             nn.Flatten(),
-            nn.Linear(36, size**4),
+            nn.Linear(144, size**4),
             nn.Linear(1*size**4, size**2+1)
         )
 
@@ -108,9 +108,9 @@ class MCTSDNN:
         return action
 
     def expand(self):
-        valid_moves = self.env.valid_moves()
-        # Create all valid children nodes
         
+        # Create all valid children nodes
+        """
         for move in range(len(valid_moves)):
              if move not in self.current_node.children.keys() and valid_moves[move] == 1.0:
                 new_node = Node(self.current_node, move)
@@ -128,27 +128,22 @@ class MCTSDNN:
         self.current_node = self.current_node.best_child(self.get_type())
         
         """
+
+        #valid_moves = self.env.valid_moves()
+        #Velg beste action fra NN
+        action = self.play_policy_greedy(self.env)
+        #Expand
+        new_node = Node(self.current_node, action)
+        self.current_node.children.update({(new_node.action, new_node)})
         for i in range(100):
-            #Traversere til leaf-node
+            #Simulere 100 ganger
             print("Sim round: ", i)
-            while(len(self.current_node.children) > 0):
-                self.current_node = self.current_node.best_child(self.get_type())
+            self.simulate(new_node)
             
-            #Velg beste action fra NN
-            action = self.play_policy_greedy(self.current_node)
-            #Expand
-            new_node = Node(self.current_node, action)
-            
-            self.current_node.children.update({(new_node.action, new_node)})
-            #Simulere
-            self.simulate(new_node) 
-            self.current_node = self.R
-                
-        while(len(self.current_node.children) > 0):
-                self.current_node = self.current_node.best_child(self.get_type())
-        """
         
+        self.current_node = new_node
         
+    
         return self.current_node.action
            
    
