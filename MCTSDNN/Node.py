@@ -27,6 +27,8 @@ class Node:
             return (-1)*(self.v / self.n - C * np.sqrt(2*np.log(self.getN()) / self.n))
 
     def get_value_default(self, type, C = 1.4):
+        if self.n is 0:
+            return 1000000
         if type == Type.BLACK:
             return self.v / self.n + C * np.sqrt(2*np.log(self.getN()) / self.n)
         else:

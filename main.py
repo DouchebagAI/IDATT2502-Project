@@ -5,7 +5,7 @@ import gym
 import matplotlib.pyplot as plt
 from MCTSDNN.MCTSDNN import MCTSDNN
 from GameManager import GameManager
-size = 4
+size = 5
 go_env = gym.make('gym_go:go-v0', size=size, komi=0, reward_method='real')
 
 go_env.__sizeof__()
@@ -19,10 +19,12 @@ gm = GameManager(go_env)
 #print(info)
 
 player10 = MCTSDNN(go_env, size, "Go2")
-player10.train(20)
+print("Trener første tre")
+player10.train(10)
 #player10.print_tree()
 player100 = MCTSDNN(go_env, size, "Go")
-player100.train(20)
+print("Trener andre tre")
+player100.train(10)
 
 
 #player100.print_tree()

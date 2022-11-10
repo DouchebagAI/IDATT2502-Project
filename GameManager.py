@@ -50,6 +50,7 @@ class GameManager:
         mcts2.backpropagate(mcts2.current_node, self.env.winner())
         return self.env.winner()
 
+
     def print_winner(self):
             if self.env.winner() == 1:
                 print("Black Won")

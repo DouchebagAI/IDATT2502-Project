@@ -23,7 +23,7 @@ class GoCNN(nn.Module):
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2),
             nn.Flatten(),
-            nn.Linear(256, size**4),
+            nn.Linear(500, size**4),
             nn.Flatten(),
             nn.Linear(1*size**4, size**2+1)
         )
@@ -51,7 +51,7 @@ class GoNN(nn.Module):
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2),
             nn.Flatten(),
-            nn.Linear(64, size**4),
+            nn.Linear(100, size**4),
             nn.Linear(1*size**4, size**2+1)
         )
 
@@ -120,14 +120,21 @@ class MCTSDNN:
                 self.current_node.children.update({(move, new_node)})
                 self.node_count += 1
         
-        index = 0
-        while(index < len(self.current_node.children)):
-            action = list(self.current_node.children.keys())[index]
-            node = self.current_node.children[action]
-            simulated_node = self.simulate(node)
-            self.current_node.children.update({(simulated_node.action, simulated_node)})
-            index += 1
-            
+        for i in range(100):
+            self.simulate(self.current_node)
+        
+        self.current_node.state = self.env.state()
+        self.states.append((self.env.state(), self.current_node))
+
+        
+
+        for i in self.current_node.children.values():
+            env_copy  = copy.deepcopy(self.env)
+            state, reward, done, _ = env_copy.step(i.action)
+            i.state = state
+            self.states.append((state, i))
+
+
         self.current_node = self.current_node.best_child(self.get_type())
         
         """
@@ -178,25 +185,25 @@ class MCTSDNN:
             # Trene på batch
             # legge i testsdata
             # sammenligne forskjellige mpter å velge på (prob, argmax)
+        if index.item() == 9:
+            #print("Passed")
+            pass
         return index.item() 
     
     def simulate(self, node):
         
         env_copy  = copy.deepcopy(self.env)
-        #node.parent.state = env_copy.state()[0] - env_copy.state()[1]
-        #self.states.update({(str(env_copy.state()), node.parent)})
+       
         
-        state, _, done, _ = env_copy.step(node.action)
-    
-        #node.state = state[0] - state[1]
-        node.state = state
-        self.states.append((state, node))
+        actionFromNode = self.play_policy_greedy(env_copy)
+        state, reward, done, _ = env_copy.step(actionFromNode)
         
+
         while not done:
             action = self.play_policy_greedy(env_copy)
-            state, _, done, _= env_copy.step(env_copy.uniform_random_action())
-            
-        self.backpropagate(node, env_copy.winner())
+            state, _, done, _= env_copy.step(action)
+        
+        self.backpropagate(node.children[actionFromNode], env_copy.winner())
         return node
 
     def get_training_data(self):
@@ -204,24 +211,27 @@ class MCTSDNN:
         random.shuffle(self.states)
         y_train = np.zeros([len(self.states), self.size**2+1])
 
+        #print(self.states[0][1])
         for i in range(len(self.states)):
             for n in self.states[i][1].children.values():
                 y_train[i][n.action] = n.get_value_default(self.get_type())
             x_train.append(list(self.states)[i][1].state)
 
+        
         limit = math.floor(len(x_train)/3)
         x_tens = torch.tensor(x_train, dtype=torch.float).reshape(-1,6,self.size, self.size).float()
-
+        
         y_tens = torch.tensor(y_train, dtype=torch.float)
         x_test = x_tens[limit*2:]
         y_test = y_tens[limit*2:]
-        batch = 200
+        batch = 10
         x_train_batches = torch.split(x_tens[:limit*2], batch)
+        #print(len(x_train_batches))
+        #print(x_train_batches[0])
         y_train_batches = torch.split(y_tens[:limit*2], batch)
         return x_train_batches, y_train_batches, x_test, y_test
         
     def train_model(self):
-        #batch = 100
         
         x_train_batches, y_train_batches, x_test, y_test = self.get_training_data()
         
@@ -252,20 +262,21 @@ class MCTSDNN:
     def get_type(self):
         return Type.BLACK if self.move_count % 2 == 0 else Type.WHITE
     
-    def train(self, n=10):
+    def train(self, n):
         for i in range(n):
             print(f"Training round: {i}")
             # Nullstiller brettet
             self.env.reset()
             done = False
-            while not done:              
+            while not done:
                 # Gjør et trekk
                 action = self.take_turn()
                 _, _, done, _ = self.env.step(action)
-
+                    
+                #self.env.render("terminal")
             self.backpropagate(self.current_node, self.env.winner())
             self.reset()
-            if i % 10 is 0:
+            if i % 10 is 0 and i is not 0:
                 self.train_model()
         
         self.train_model()

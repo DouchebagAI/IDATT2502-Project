@@ -2,9 +2,6 @@ from MCTS.Node import Node, Type
 from enum import Enum
 import copy
 
-
-import time
-
 class MCTS:
     
     def __init__(self, env):
@@ -32,7 +29,6 @@ class MCTS:
                 self.current_node.children.update({(move, new_node)})
                 self.node_count += 1
         
-        start = time.time()
         index = 0
         while(index < len(self.current_node.children)):
             action = list(self.current_node.children.keys())[index]
