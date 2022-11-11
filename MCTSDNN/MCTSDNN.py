@@ -27,6 +27,7 @@ class GoCNN(nn.Module):
             nn.Flatten(),
             nn.Linear(1*size**4, size**2+1)
         )
+        self.logits.to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
 
     def f(self, x):
         return torch.softmax(self.logits(x), dim=1)
@@ -40,20 +41,22 @@ class GoCNN(nn.Module):
         return torch.mean(torch.eq(self.f(x).argmax(1), y.argmax(1)).float())
 
 class GoNN(nn.Module):
-    def __init__(self, size=3):
+    def __init__(self, size=3, kernel_size = 3):
         super().__init__()
         self.size = size
+        lin = 100 if kernel_size == 5 else 225
         # Conv
         # Relu
         self.logits = nn.Sequential(
             nn.ReLU(),
-            nn.Conv2d(6, size**2, kernel_size=5, padding=2),
+            nn.Conv2d(6, size**2, kernel_size=kernel_size, padding=2),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2),
             nn.Flatten(),
-            nn.Linear(100, size**4),
+            nn.Linear(lin, size**4),
             nn.Linear(1*size**4, size**2+1)
         )
+        self.logits.to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
 
     def f(self, x):
         return torch.softmax(self.logits(x), dim=1)
@@ -68,18 +71,22 @@ class GoNN(nn.Module):
 
 class MCTSDNN:
 
-    def __init__(self, env : gym.Env, size, model):
+    def __init__(self, env : gym.Env, size, model, kernel_size = 3):
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.size = size
         if model is "Go":
-            self.model = GoNN(self.size)
+            self.model = GoNN(self.size, kernel_size=kernel_size).to(self.device)
         if model is "Go2":
-            self.model = GoCNN(self.size)
+            self.model = GoCNN(self.size).to(self.device)
+
         self.move_count = 0
         self.env = env
         self.R = Node(None, None)
         self.current_node = self.R
         self.node_count = 0
         self.states = []
+
+
 
 
     def take_turn(self):
@@ -119,14 +126,14 @@ class MCTSDNN:
                 new_node = Node(self.current_node, move)
                 self.current_node.children.update({(move, new_node)})
                 self.node_count += 1
-        
-        for i in range(100):
+
+        for i in range(50):
             self.simulate(self.current_node)
-        
+
         self.current_node.state = self.env.state()
         self.states.append((self.env.state(), self.current_node))
 
-        
+
 
         for i in self.current_node.children.values():
             env_copy  = copy.deepcopy(self.env)
@@ -164,16 +171,18 @@ class MCTSDNN:
         #env_copy = copy.deepcopy(self.env)
         #state, _, _, _ = env_copy.step(node.action)
         #node.state = self.env.state()[0] - self.env.state()[1
-        x_tens = torch.tensor(env.state(), dtype=torch.float)
+        x_tens = torch.tensor(env.state(), dtype=torch.float).to(self.device)
+
         y = self.model.f(x_tens.reshape(-1, 6,self.size, self.size).float())
         if self.get_type() == Type.BLACK:
-            index = np.argmax(y.detach())
+            index = np.argmax(y.cpu().detach())
         else:
-            index = np.argmin(y.detach())
+            index = np.argmin(y.cpu().detach())
         
         valid_moves = env.valid_moves()
         
         if valid_moves[index.item()] == 0.0:
+            #print("Invalid move")
             return env.uniform_random_action()
         #value head
             # input state- lag - splitter i to 
@@ -193,8 +202,8 @@ class MCTSDNN:
     def simulate(self, node):
         
         env_copy  = copy.deepcopy(self.env)
-       
-        
+
+
         actionFromNode = self.play_policy_greedy(env_copy)
         state, reward, done, _ = env_copy.step(actionFromNode)
         
@@ -219,12 +228,13 @@ class MCTSDNN:
 
         
         limit = math.floor(len(x_train)/3)
-        x_tens = torch.tensor(x_train, dtype=torch.float).reshape(-1,6,self.size, self.size).float()
-        
-        y_tens = torch.tensor(y_train, dtype=torch.float)
+        x_tens = torch.tensor(x_train, dtype=torch.float).reshape(-1,6,self.size, self.size).float().to(self.device)
+
+        y_tens = torch.tensor(y_train, dtype=torch.float).to(self.device)
+
         x_test = x_tens[limit*2:]
         y_test = y_tens[limit*2:]
-        batch = 10
+        batch = 300
         x_train_batches = torch.split(x_tens[:limit*2], batch)
         #print(len(x_train_batches))
         #print(x_train_batches[0])
@@ -232,17 +242,18 @@ class MCTSDNN:
         return x_train_batches, y_train_batches, x_test, y_test
         
     def train_model(self):
-        
+
         x_train_batches, y_train_batches, x_test, y_test = self.get_training_data()
-        
+
         # Optimize: adjust W and b to minimize loss using stochastic gradient descent
         optimizer = torch.optim.Adam(self.model.parameters(), 0.001)
         
-        for _ in range(20):
+        for _ in range(1000):
             for batch in range(len(x_train_batches)):
                 #print(x_train_batches[batch].shape)
                 #print(y_train_batches[batch].shape)
                 self.model.loss(x_train_batches[batch], y_train_batches[batch]).backward()  # Compute loss gradients
+                print(self.model.loss(x_train_batches[batch], y_train_batches[batch]))
                 optimizer.step()  # Perform optimization by adjusting W and b,
                 optimizer.zero_grad()  # Clear gradients for next step
         print(f"Loss: {self.model.loss(x_test, y_test)}")
@@ -276,7 +287,7 @@ class MCTSDNN:
                 #self.env.render("terminal")
             self.backpropagate(self.current_node, self.env.winner())
             self.reset()
-            if i % 10 is 0 and i is not 0:
+            if i % 5 is 0 and i is not 0:
                 self.train_model()
         
         self.train_model()
