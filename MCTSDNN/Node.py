@@ -32,14 +32,16 @@ class Node:
         if type == Type.BLACK:
             return self.v / self.n + C * np.sqrt(2*np.log(self.getN()) / self.n)
         else:
-            return (self.v / self.n - C * np.sqrt(2*np.log(self.getN()) / self.n))
+            return self.v / self.n - C * np.sqrt(2 * np.log(self.getN()) / self.n)
 
     # Retuns the number of visists of the parent
     def getN(self):
         if self.is_root():
             return self.n
         return self.parent.n
-        
+
+    def get_type(self):
+        return Type.WHITE if self.parent.state[2][0][0] == 1 else Type.BLACK
 
     def is_root(self):
         return self.parent is None

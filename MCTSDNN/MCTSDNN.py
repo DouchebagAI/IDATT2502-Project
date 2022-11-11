@@ -87,8 +87,6 @@ class MCTSDNN:
         self.states = []
 
 
-
-
     def take_turn(self):
         # Hvis ingen barn, exland
         # Hvis ikke, velg det barnet med høyest verdi
@@ -127,7 +125,7 @@ class MCTSDNN:
                 self.current_node.children.update({(move, new_node)})
                 self.node_count += 1
 
-        for i in range(50):
+        for i in range(100):
             self.simulate(self.current_node)
 
         self.current_node.state = self.env.state()
@@ -162,8 +160,20 @@ class MCTSDNN:
         
         """
         return self.current_node.action
-           
-   
+
+    def simulate(self, node):
+
+        env_copy = copy.deepcopy(self.env)
+
+        actionFromNode = node.best_child(self.get_type()).action
+        state, reward, done, _ = env_copy.step(actionFromNode)
+
+        while not done:
+            action = self.play_policy_greedy(env_copy)
+            state, _, done, _ = env_copy.step(action)
+
+        self.backpropagate(node.children[actionFromNode], env_copy.winner())
+        return node
             
     
     def play_policy_greedy(self, env):
@@ -199,42 +209,42 @@ class MCTSDNN:
             pass
         return index.item() 
     
-    def simulate(self, node):
-        
-        env_copy  = copy.deepcopy(self.env)
 
-
-        actionFromNode = self.play_policy_greedy(env_copy)
-        state, reward, done, _ = env_copy.step(actionFromNode)
-        
-
-        while not done:
-            action = self.play_policy_greedy(env_copy)
-            state, _, done, _= env_copy.step(action)
-        
-        self.backpropagate(node.children[actionFromNode], env_copy.winner())
-        return node
 
     def get_training_data(self):
         x_train = []
         random.shuffle(self.states)
-        y_train = np.zeros([len(self.states), self.size**2+1])
+        y_train = []
 
         #print(self.states[0][1])
+        t = 0
         for i in range(len(self.states)):
+            y_t = np.zeros(self.size**2+1)
             for n in self.states[i][1].children.values():
-                y_train[i][n.action] = n.get_value_default(self.get_type())
-            x_train.append(list(self.states)[i][1].state)
+                y_t[n.action] = n.get_value_default(n.get_type())
+                #print(y_t)
+
+            if sum(y_t) != 0:
+                y_train.append(y_t)
+                x_train.append(list(self.states)[i][1].state)
+                print(f"board: {x_train[t][0]-x_train[t][1]}x: {x_train[t][2]}, y: {y_train[t]}")
+                t += 1
+
+
+
 
         
         limit = math.floor(len(x_train)/3)
+        print(len(x_train))
         x_tens = torch.tensor(x_train, dtype=torch.float).reshape(-1,6,self.size, self.size).float().to(self.device)
 
-        y_tens = torch.tensor(y_train, dtype=torch.float).to(self.device)
+        y_tens = torch.tensor(y_train, dtype=torch.float).float().to(self.device)
+
 
         x_test = x_tens[limit*2:]
         y_test = y_tens[limit*2:]
-        batch = 300
+
+        batch = 200
         x_train_batches = torch.split(x_tens[:limit*2], batch)
         #print(len(x_train_batches))
         #print(x_train_batches[0])
@@ -250,10 +260,8 @@ class MCTSDNN:
         
         for _ in range(1000):
             for batch in range(len(x_train_batches)):
-                #print(x_train_batches[batch].shape)
-                #print(y_train_batches[batch].shape)
                 self.model.loss(x_train_batches[batch], y_train_batches[batch]).backward()  # Compute loss gradients
-                print(self.model.loss(x_train_batches[batch], y_train_batches[batch]))
+                #print(self.model.loss(x_train_batches[batch], y_train_batches[batch]))
                 optimizer.step()  # Perform optimization by adjusting W and b,
                 optimizer.zero_grad()  # Clear gradients for next step
         print(f"Loss: {self.model.loss(x_test, y_test)}")
