@@ -18,12 +18,15 @@ class GoCNN(nn.Module):
         self.logits = nn.Sequential(
             nn.Conv2d(6, size**2, kernel_size=5, padding=2),
             nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.MaxPool2d(kernel_size=2),
             #nn.MaxPool2d(kernel_size=2),
             nn.Conv2d(size**2, size**3, kernel_size=5, padding=2),
             nn.ReLU(),
+            nn.Dropout(0.2),
             nn.MaxPool2d(kernel_size=2),
             nn.Flatten(),
-            nn.Linear(500, size**4),
+            nn.Linear(125, size**4),
             nn.Flatten(),
             nn.Linear(1*size**4, size**2+1)
         )
@@ -34,7 +37,7 @@ class GoCNN(nn.Module):
 
     # Cross Entropy loss
     def loss(self, x, y):
-        return nn.functional.cross_entropy(self.logits(x), y)
+        return nn.functional.cross_entropy(self.logits(x),  y.argmax(1))
 
     # Accuracy
     def accuracy(self, x, y):
@@ -227,7 +230,7 @@ class MCTSDNN:
             if sum(y_t) != 0:
                 y_train.append(y_t)
                 x_train.append(list(self.states)[i][1].state)
-                print(f"board: {x_train[t][0]-x_train[t][1]}x: {x_train[t][2]}, y: {y_train[t]}")
+                #print(f"board: {x_train[t][0]-x_train[t][1]}x: {x_train[t][2]}, y: {y_train[t]}")
                 t += 1
 
 
@@ -261,10 +264,10 @@ class MCTSDNN:
         for _ in range(1000):
             for batch in range(len(x_train_batches)):
                 self.model.loss(x_train_batches[batch], y_train_batches[batch]).backward()  # Compute loss gradients
-                #print(self.model.loss(x_train_batches[batch], y_train_batches[batch]))
+                print(self.model.loss(x_train_batches[batch], y_train_batches[batch]))
                 optimizer.step()  # Perform optimization by adjusting W and b,
                 optimizer.zero_grad()  # Clear gradients for next step
-        print(f"Loss: {self.model.loss(x_test, y_test)}")
+        #print(f"Loss: {self.model.loss(x_test, y_test)}")
         print(f"Accuracy: {self.model.accuracy(x_test, y_test)}")
             
 
