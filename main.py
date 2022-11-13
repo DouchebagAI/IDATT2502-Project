@@ -2,7 +2,7 @@ import json
 import warnings
 warnings.filterwarnings("ignore")
 import gym
-
+import numpy as np
 import matplotlib.pyplot as plt
 from MCTSDNN.MCTSDNN import MCTSDNN
 from GameManager import GameManager
@@ -12,6 +12,23 @@ go_env = gym.make('gym_go:go-v0', size=size, komi=0, reward_method='real')
 #print(go_env.valid_moves())
 
 gm = GameManager(go_env)
+
+def plot_training(mcts: MCTSDNN, title):
+    losses = np.array(mcts.losses)
+    accuracy = np.array(mcts.accuracy)
+    plt.figure(0)
+    plt.plot(losses, label="Loss", color = "blue")
+    plt.xlabel('Iterations')
+    plt.ylabel('Loss')
+    plt.title(title+ f" Min: {np.min(losses)}")
+    plt.show()
+
+    plt.figure(1)
+    plt.plot(accuracy, label="Accuracy", color="Green")
+    plt.xlabel('Iterations')
+    plt.ylabel('Accuracy')
+    plt.title(title + f" Max: {np.max(accuracy)}")
+    plt.show()
 
 
 def play(black_p, white_p, n=100):
@@ -43,22 +60,38 @@ def play(black_p, white_p, n=100):
 #print(reward)
 #print(info)
 
-player10 = MCTSDNN(go_env, size, "Go2", kernel_size=5)
-print("Trener første tre")
-player10.train(5)
+player10 = MCTSDNN(go_env, size, "Go", kernel_size=5)
+print("Go")
+
 #player10.print_tree()
 player100 = MCTSDNN(go_env, size, "Go2", kernel_size=5)
 print("Trener andre tre")
-player100.train(10)
-player3 = MCTSDNN(go_env, size, "Go2", kernel_size=3)
-print("Trener andre tre")
-player3.train(20)
+#player100.train(10)
+player3 = MCTSDNN(go_env, size, "Go3", kernel_size=5)
+player100.train(20)
 
+plot_training(player100, "Go2 - 20 rounds training")
+#player10.train(10)
+
+print("Go2")
+player3.train(20)
+plot_training(player3, "Go3 - 20 rounds training")
+#plot_training(player3, "Go3 - 5 rounds training")
+#player3.train(5)
+
+print("Go2")
+player10.train(20)
+plot_training(player3, "Go1 - 20 rounds training")
 #player100.print_tree()
 #gm.play_as_white(player100)
 
 
+print("Go3 vs Go2")
+play(player3, player100, 1000)
+print("Go2 vs Go3")
+play(player100, player3, 1000)
 
+"""
 print("5 vs 10")
 play(player10, player100)
 print("10 vs 5")
@@ -73,7 +106,7 @@ print("20 vs 10")
 play(player3, player100)
 print("10 vs 20")
 play(player100, player3)
-
+"""
 #
 """""""""
 for i in range(5): 

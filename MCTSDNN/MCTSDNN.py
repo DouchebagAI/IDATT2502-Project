@@ -8,8 +8,8 @@ import torch.nn as nn
 import copy
 import numpy as np
 import gym
-
-class GoCNN(nn.Module):
+#0.76
+class GoDCNN(nn.Module):
     def __init__(self, size=3):
         super().__init__()
         self.size = size
@@ -18,15 +18,17 @@ class GoCNN(nn.Module):
         self.logits = nn.Sequential(
             nn.Conv2d(6, size**2, kernel_size=5, padding=2),
             nn.ReLU(),
-            nn.Dropout(0.2),
+            #nn.Dropout(0.2),
             nn.MaxPool2d(kernel_size=2),
             #nn.MaxPool2d(kernel_size=2),
             nn.Conv2d(size**2, size**3, kernel_size=5, padding=2),
             nn.ReLU(),
-            nn.Dropout(0.2),
+            nn.Conv2d(size ** 3, size ** 4, kernel_size=5, padding=2),
+            nn.ReLU(),
+            #nn.Dropout(0.2),
             nn.MaxPool2d(kernel_size=2),
             nn.Flatten(),
-            nn.Linear(125, size**4),
+            nn.Linear(625, size**4),
             nn.Flatten(),
             nn.Linear(1*size**4, size**2+1)
         )
@@ -43,6 +45,62 @@ class GoCNN(nn.Module):
     def accuracy(self, x, y):
         return torch.mean(torch.eq(self.f(x).argmax(1), y.argmax(1)).float())
 
+#0.665
+class GoCNN(nn.Module):
+    def __init__(self, size=3):
+        super().__init__()
+        self.size = size
+        # Conv
+        # Relu
+        self.logits = nn.Sequential(
+            nn.Conv2d(6, size ** 2, kernel_size=5, padding=2),
+            nn.ReLU(),
+            # nn.Dropout(0.2),
+            nn.MaxPool2d(kernel_size=2),
+            # nn.MaxPool2d(kernel_size=2),
+            nn.Conv2d(size ** 2, size ** 3, kernel_size=5, padding=2),
+            nn.ReLU(),
+            nn.Conv2d(size ** 3, size ** 4, kernel_size=5, padding=2),
+            nn.ReLU(),
+            nn.Conv2d(size ** 4, size ** 5, kernel_size=5, padding=2),
+            nn.ReLU(),
+            # nn.Dropout(0.2),
+            nn.MaxPool2d(kernel_size=2),
+            nn.Flatten(),
+            nn.Linear(3125, size ** 4),
+            nn.Flatten(),
+            nn.Linear(1 * size ** 4, size ** 2 + 1)
+        )
+        """
+        self.logits = nn.Sequential(
+            nn.Conv2d(6, size**2, kernel_size=5, padding=2),
+            nn.ReLU(),
+            #nn.Dropout(0.2),
+            nn.MaxPool2d(kernel_size=2),
+            #nn.MaxPool2d(kernel_size=2),
+            nn.Conv2d(size**2, size**3, kernel_size=5, padding=2),
+            nn.ReLU(),
+            #nn.Dropout(0.2),
+            nn.MaxPool2d(kernel_size=2),
+            nn.Flatten(),
+            nn.Linear(125, size**4),
+            nn.Flatten(),
+            nn.Linear(1*size**4, size**2+1)
+        )
+        """
+        self.logits.to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+
+    def f(self, x):
+        return torch.softmax(self.logits(x), dim=1)
+
+    # Cross Entropy loss
+    def loss(self, x, y):
+        return nn.functional.cross_entropy(self.logits(x),  y.argmax(1))
+
+    # Accuracy
+    def accuracy(self, x, y):
+        return torch.mean(torch.eq(self.f(x).argmax(1), y.argmax(1)).float())
+#0.79
 class GoNN(nn.Module):
     def __init__(self, size=3, kernel_size = 3):
         super().__init__()
@@ -66,7 +124,7 @@ class GoNN(nn.Module):
 
     # Cross Entropy loss
     def loss(self, x, y):
-        return nn.functional.cross_entropy(self.logits(x), y)
+        return nn.functional.cross_entropy(self.logits(x), y.argmax(1))
 
     # Accuracy
     def accuracy(self, x, y):
@@ -81,6 +139,8 @@ class MCTSDNN:
             self.model = GoNN(self.size, kernel_size=kernel_size).to(self.device)
         if model is "Go2":
             self.model = GoCNN(self.size).to(self.device)
+        if model is "Go3":
+            self.model = GoDCNN(self.size).to(self.device)
 
         self.move_count = 0
         self.env = env
@@ -88,6 +148,8 @@ class MCTSDNN:
         self.current_node = self.R
         self.node_count = 0
         self.states = []
+        self.losses = []
+        self.accuracy = []
 
 
     def take_turn(self):
@@ -166,13 +228,14 @@ class MCTSDNN:
 
     def simulate(self, node):
 
+
         env_copy = copy.deepcopy(self.env)
 
         actionFromNode = node.best_child(self.get_type()).action
         state, reward, done, _ = env_copy.step(actionFromNode)
 
         while not done:
-            action = self.play_policy_greedy(env_copy)
+            action = env_copy.uniform_random_action()
             state, _, done, _ = env_copy.step(action)
 
         self.backpropagate(node.children[actionFromNode], env_copy.winner())
@@ -259,18 +322,22 @@ class MCTSDNN:
         x_train_batches, y_train_batches, x_test, y_test = self.get_training_data()
 
         # Optimize: adjust W and b to minimize loss using stochastic gradient descent
-        optimizer = torch.optim.Adam(self.model.parameters(), 0.001)
+        optimizer = torch.optim.Adam(self.model.parameters(), 0.0001)
         
         for _ in range(1000):
             for batch in range(len(x_train_batches)):
                 self.model.loss(x_train_batches[batch], y_train_batches[batch]).backward()  # Compute loss gradients
-                print(self.model.loss(x_train_batches[batch], y_train_batches[batch]))
+                self.losses.append(self.model.loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
                 optimizer.step()  # Perform optimization by adjusting W and b,
                 optimizer.zero_grad()  # Clear gradients for next step
+            self.accuracy.append(self.model.accuracy(x_test, y_test).cpu().detach())
         #print(f"Loss: {self.model.loss(x_test, y_test)}")
         print(f"Accuracy: {self.model.accuracy(x_test, y_test)}")
             
-
+    def get_accuracy(self):
+        if len(self.accuracy) == 0:
+            return 0
+        return np.max(self.accuracy)
         
     def backpropagate(self, node: Node, v):
         
@@ -298,8 +365,9 @@ class MCTSDNN:
                 #self.env.render("terminal")
             self.backpropagate(self.current_node, self.env.winner())
             self.reset()
-            if i % 5 is 0 and i is not 0:
-                self.train_model()
+            if i % 5 is 0 and i != 0:
+                #self.train_model()
+                pass
         
         self.train_model()
         print(len(self.states))
