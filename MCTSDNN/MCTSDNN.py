@@ -32,8 +32,6 @@ class MCTSDNN:
             self.model = GoNN(self.size, kernel_size=kernel_size).to(self.device)
         if model is "Go2":
             self.model = GoCNN(self.size).to(self.device)
-        if model is "Go3":
-            self.model = GoDCNN(self.size).to(self.device)
 
         self.value_model = GoCNNValue(self.size, 5)
         self.move_count = 0
@@ -145,7 +143,7 @@ class MCTSDNN:
         state, reward, done, _ = env_copy.step(actionFromNode)
 
         while not done:
-            action = self.play_policy_greedy(self.env)
+            action = self.play_policy_greedy(env_copy)
             state, _, done, _ = env_copy.step(action)
 
         win = np.zeros(3)

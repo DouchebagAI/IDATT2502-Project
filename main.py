@@ -70,7 +70,7 @@ player_tree_only2 = MCTSTREE(go_env)
 print("Go")
 
 #player10.print_tree()
-player100 = MCTSDNN(go_env, size, "Go3", kernel_size=5)
+player100 = MCTSDNN(go_env, size, "Go2", kernel_size=3)
 #print("Trener andre tre")
 player100.train(2)
 #player3 = MCTSDNN(go_env, size, "Go3", kernel_size=5)
