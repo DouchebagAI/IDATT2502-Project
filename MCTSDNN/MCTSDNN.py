@@ -1,6 +1,9 @@
 import math
 import random
-
+from models.GoCNN import GoCNN
+from models.GoDCNN import GoDCNN
+from models.GoNN import GoNN
+from models.CNNValue import GoCNNValue
 from MCTSDNN.Node import Node, Type
 from enum import Enum
 import torch
@@ -8,148 +11,17 @@ import torch.nn as nn
 import copy
 import numpy as np
 import gym
-#0.76
-class GoDCNN(nn.Module):
-    def __init__(self, size=3):
-        super().__init__()
-        self.size = size
-        # Conv
-        # Relu
-        self.logits = nn.Sequential(
-            nn.Conv2d(6, size**2, kernel_size=5, padding=2),
-            nn.ReLU(),
-            #nn.Dropout(0.2),
-            nn.MaxPool2d(kernel_size=2),
-            #nn.MaxPool2d(kernel_size=2),
-            nn.Conv2d(size**2, size**3, kernel_size=5, padding=2),
-            nn.ReLU(),
-            nn.Conv2d(size ** 3, size ** 4, kernel_size=5, padding=2),
-            nn.ReLU(),
-            #nn.Dropout(0.2),
-            nn.MaxPool2d(kernel_size=2),
-            nn.Flatten(),
-            nn.Linear(625, size**4),
-            nn.Flatten(),
-            nn.Linear(1*size**4, size**2+1)
-        )
-        self.logits.to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-
-    def f(self, x):
-        return torch.softmax(self.logits(x), dim=1)
-
-    # Cross Entropy loss
-    def loss(self, x, y):
-        return nn.functional.cross_entropy(self.logits(x),  y.argmax(1))
-
-    # Accuracy
-    def accuracy(self, x, y):
-        return torch.mean(torch.eq(self.f(x).argmax(1), y.argmax(1)).float())
-
-#0.665
-class GoCNN(nn.Module):
-    def __init__(self, size=3):
-        super().__init__()
-        self.size = size
-        # Conv
-        # Relu
-        self.logits = nn.Sequential(
-            nn.Conv2d(6, size ** 2, kernel_size=5, padding=2),
-            nn.ReLU(),
-            nn.Dropout(0.2),
-            nn.MaxPool2d(kernel_size=2),
-            #nn.MaxPool2d(kernel_size=2),
-            nn.Conv2d(size ** 2, size ** 3, kernel_size=5, padding=2),
-            nn.ReLU(),
-            nn.Dropout(0.2),
-            nn.Conv2d(size ** 3, size ** 4, kernel_size=5, padding=2),
-            nn.ReLU(),
-            nn.Dropout(0.2),
-            nn.MaxPool2d(kernel_size=2),
-            nn.Flatten(),
-            nn.Linear(625, size ** 4),
-            nn.Flatten(),
-            nn.Linear(1 * size ** 4, size ** 2 + 1)
-        )
-        """
-        0.0002 loss
-        0.73 acc
-        self.logits = nn.Sequential(
-            nn.Conv2d(6, size ** 2, kernel_size=5, padding=2),
-            nn.ReLU(),
-            # nn.Dropout(0.2),
-            nn.MaxPool2d(kernel_size=2),
-            # nn.MaxPool2d(kernel_size=2),
-            nn.Conv2d(size ** 2, size ** 3, kernel_size=5, padding=2),
-            nn.ReLU(),
-            nn.Conv2d(size ** 3, size ** 4, kernel_size=5, padding=2),
-            nn.ReLU(),
-            nn.Conv2d(size ** 4, size ** 5, kernel_size=5, padding=2),
-            nn.ReLU(),
-            # nn.Dropout(0.2),
-            nn.MaxPool2d(kernel_size=2),
-            nn.Flatten(),
-            nn.Linear(3125, size ** 4),
-            nn.Flatten(),
-            nn.Linear(1 * size ** 4, size ** 2 + 1)
-        )
-        
-        self.logits = nn.Sequential(
-            nn.Conv2d(6, size**2, kernel_size=5, padding=2),
-            nn.ReLU(),
-            #nn.Dropout(0.2),
-            nn.MaxPool2d(kernel_size=2),
-            #nn.MaxPool2d(kernel_size=2),
-            nn.Conv2d(size**2, size**3, kernel_size=5, padding=2),
-            nn.ReLU(),
-            #nn.Dropout(0.2),
-            nn.MaxPool2d(kernel_size=2),
-            nn.Flatten(),
-            nn.Linear(125, size**4),
-            nn.Flatten(),
-            nn.Linear(1*size**4, size**2+1)
-        )
-        """
-        self.logits.to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-
-    def f(self, x):
-        return torch.softmax(self.logits(x), dim=1)
-
-    # Cross Entropy loss
-    def loss(self, x, y):
-        return nn.functional.cross_entropy(self.logits(x),  y.argmax(1))
-
-    # Accuracy
-    def accuracy(self, x, y):
-        return torch.mean(torch.eq(self.f(x).argmax(1), y.argmax(1)).float())
-#0.79
-class GoNN(nn.Module):
-    def __init__(self, size=3, kernel_size = 3):
-        super().__init__()
-        self.size = size
-        lin = 100 if kernel_size == 5 else 225
-        # Conv
-        # Relu
-        self.logits = nn.Sequential(
-            nn.ReLU(),
-            nn.Conv2d(6, size**2, kernel_size=kernel_size, padding=2),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2),
-            nn.Flatten(),
-            nn.Linear(lin, size**4),
-            nn.Linear(1*size**4, size**2+1)
-        )
-        self.logits.to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-
-    def f(self, x):
-        return torch.softmax(self.logits(x), dim=1)
-
-    # Cross Entropy loss
-    def loss(self, x, y):
-        return nn.functional.cross_entropy(self.logits(x), y.argmax(1))
-
-    # Accuracy
-    def accuracy(self, x, y):
-        return torch.mean(torch.eq(self.f(x).argmax(1), y.argmax(1)).float())
+"""
+1. Reskaler modeller -> mindre
+2. Lagre treningsdata som primitive dataverdier
+3. Slett treet etter 1 gjennomkjøring
+4. Bruk value head-modellen til å predikere win/loss
+5. Undersøk batch size
+6. Refaktorere kode (bruker mye av samme metoder 2 ganger)
+7. Lagre treningsdata / testdata som json
+8. Kernel-size -> 3
+9. 
+"""
 
 class MCTSDNN:
 
@@ -163,14 +35,22 @@ class MCTSDNN:
         if model is "Go3":
             self.model = GoDCNN(self.size).to(self.device)
 
+        self.value_model = GoCNNValue(self.size, 5)
         self.move_count = 0
         self.env = env
         self.R = Node(None, None)
         self.current_node = self.R
         self.node_count = 0
-        self.states = []
+
+
+        self.training_win = []
+        self.test_win = []
+
+
         self.losses = []
         self.accuracy = []
+        self.training_data = []
+        self.test_data = []
 
 
     def take_turn(self):
@@ -211,11 +91,15 @@ class MCTSDNN:
                 self.current_node.children.update({(move, new_node)})
                 self.node_count += 1
 
-        for i in range(500):
+        for i in range(300):
             self.simulate(self.current_node)
 
         self.current_node.state = self.env.state()
-        self.states.append((self.env.state(), self.current_node))
+
+        if(random.randint(1,99) <= 33):
+            self.test_data.append(self.current_node)
+        else:
+            self.training_data.append(self.current_node)
 
 
 
@@ -223,7 +107,12 @@ class MCTSDNN:
             env_copy  = copy.deepcopy(self.env)
             state, reward, done, _ = env_copy.step(i.action)
             i.state = state
-            self.states.append((state, i))
+                        
+            if(random.randint(1,99) <= 33):
+                self.test_data.append(i)
+            else:
+                self.training_data.append(i)
+            
 
 
         self.current_node = self.current_node.best_child(self.get_type())
@@ -256,8 +145,21 @@ class MCTSDNN:
         state, reward, done, _ = env_copy.step(actionFromNode)
 
         while not done:
-            action = env_copy.uniform_random_action()
+            action = self.play_policy_greedy(self.env)
             state, _, done, _ = env_copy.step(action)
+
+        win = np.zeros(3)
+        if  env_copy.winner() == 1:
+            win[0] = 1
+        if env_copy.winner() == 0:
+            win[1] = 1
+        if env_copy.winner() == -1:
+            win[2] = 1
+            
+        if(random.randint(1,99) <= 33):
+            self.test_win.append((state, win))
+        else:
+            self.training_win.append((state, win))
 
         self.backpropagate(node.children[actionFromNode], env_copy.winner())
         return node
@@ -272,11 +174,12 @@ class MCTSDNN:
 
         y = self.model.f(x_tens.reshape(-1, 6,self.size, self.size).float())
         if self.get_type() == Type.BLACK:
-            index = np.argmax(y.cpu().detach())
+            index = np.argmax(y.cpu().detach()*env.valid_moves())
         else:
-            index = np.argmin(y.cpu().detach())
+            index = np.argmin(y.cpu().detach()*env.valid_moves())
         
         valid_moves = env.valid_moves()
+        
         
         if valid_moves[index.item()] == 0.0:
             #print("Invalid move")
@@ -291,56 +194,80 @@ class MCTSDNN:
             # Trene på batch
             # legge i testsdata
             # sammenligne forskjellige mpter å velge på (prob, argmax)
-        if index.item() == 9:
-            #print("Passed")
-            pass
+    
         return index.item() 
     
     def value_head(self, state):
         pass
 
-    def get_training_data(self):
+    def value_data_to_tensor(self, data):
         x_train = []
-        random.shuffle(self.states)
+        random.shuffle(data)
         y_train = []
 
         #print(self.states[0][1])
         t = 0
-        for i in range(len(self.states)):
+        for i in range(len(data)):
+            y_t = data[i][1]
+            y_train.append(y_t)
+            x_train.append(list(data)[i][0])
+
+        x_tens = torch.tensor(x_train, dtype=torch.float).reshape(-1,6,self.size, self.size).float().to(self.device)
+
+        y_tens = torch.tensor(y_train, dtype=torch.float).float().to(self.device)
+
+        return x_tens, y_tens
+
+    def data_to_tensor(self, data):
+        x_train = []
+        random.shuffle(data)
+        y_train = []
+
+        #print(self.states[0][1])
+        t = 0
+        for i in data:
             y_t = np.zeros(self.size**2+1)
-            for n in self.states[i][1].children.values():
+            for n in i.children.values():
                 y_t[n.action] = n.get_value_default(n.get_type())
                 #print(y_t)
 
             if sum(y_t) != 0:
                 y_train.append(y_t)
-                x_train.append(list(self.states)[i][1].state)
+                x_train.append(i.state)
                 #print(f"board: {x_train[t][0]-x_train[t][1]}x: {x_train[t][2]}, y: {y_train[t]}")
                 t += 1
 
-
-
-
-        
-        limit = math.floor(len(x_train)/3)
-        print(len(x_train))
         x_tens = torch.tensor(x_train, dtype=torch.float).reshape(-1,6,self.size, self.size).float().to(self.device)
 
         y_tens = torch.tensor(y_train, dtype=torch.float).float().to(self.device)
 
+        return x_tens, y_tens
 
-        x_test = x_tens[limit*2:]
-        y_test = y_tens[limit*2:]
+    def get_training_data(self):
+        
+        x_train, y_train = self.data_to_tensor(self.training_data)
+        x_test, y_test = self.data_to_tensor(self.test_data)
 
-        batch = 200
-        x_train_batches = torch.split(x_tens[:limit*2], batch)
+        batch = 32
+        x_train_batches = torch.split(x_train, batch)
         #print(len(x_train_batches))
         #print(x_train_batches[0])
-        y_train_batches = torch.split(y_tens[:limit*2], batch)
+        y_train_batches = torch.split(y_train, batch)
+        return x_train_batches, y_train_batches, x_test, y_test
+
+    def get_value_training_data(self):
+        x_train, y_train = self.value_data_to_tensor(self.training_win)
+        x_test, y_test = self.value_data_to_tensor(self.test_win)
+
+        batch = 32
+        x_train_batches = torch.split(x_train, batch)
+        # print(len(x_train_batches))
+        # print(x_train_batches[0])
+        y_train_batches = torch.split(y_train, batch)
         return x_train_batches, y_train_batches, x_test, y_test
         
     def train_model(self):
-
+        
         x_train_batches, y_train_batches, x_test, y_test = self.get_training_data()
 
         # Optimize: adjust W and b to minimize loss using stochastic gradient descent
@@ -353,9 +280,28 @@ class MCTSDNN:
                 optimizer.step()  # Perform optimization by adjusting W and b,
                 optimizer.zero_grad()  # Clear gradients for next step
             self.accuracy.append(self.model.accuracy(x_test, y_test).cpu().detach())
-        #print(f"Loss: {self.model.loss(x_test, y_test)}")
-        print(f"Accuracy: {self.model.accuracy(x_test, y_test)}")
-            
+            # print(f"Loss: {self.model.loss(x_test, y_test)}")
+            print(f"Accuracy: {self.model.accuracy(x_test, y_test)}")
+
+    def train_value_model(self):
+        x_train_batches, y_train_batches, x_test, y_test = self.get_value_training_data()
+
+        # Optimize: adjust W and b to minimize loss using stochastic gradient descent
+        optimizer = torch.optim.Adam(self.model.parameters(), 0.0001)
+
+        for _ in range(1000):
+            for batch in range(len(x_train_batches)):
+                self.model.loss(x_train_batches[batch], y_train_batches[batch]).backward()  # Compute loss gradients
+                self.losses.append(self.model.loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
+                optimizer.step()  # Perform optimization by adjusting W and b,
+                optimizer.zero_grad()  # Clear gradients for next step
+            self.accuracy.append(self.model.accuracy(x_test, y_test).cpu().detach())
+
+        print(f"Loss value model: {self.model.loss(x_test, y_test)}")
+        print(f"Accuracy value model: {self.model.accuracy(x_test, y_test)}")
+        print(len(self.training_win))
+
+
     def get_accuracy(self):
         if len(self.accuracy) == 0:
             return 0
@@ -390,9 +336,10 @@ class MCTSDNN:
             if i % 5 is 0 and i != 0:
                 #self.train_model()
                 pass
-        
+        print("Training network")
+        print(len(self.training_win))
         self.train_model()
-        print(len(self.states))
+        self.train_value_model()
     
     def opponent_turn_update(self, move):
         self.move_count += 1
@@ -402,8 +349,6 @@ class MCTSDNN:
             new_node = Node(self.current_node, move)
             self.current_node.children.update({(move, new_node)})
             self.current_node = new_node
-        
-        
 
     def reset(self):
         self.move_count = 0
@@ -412,7 +357,3 @@ class MCTSDNN:
     # Metode for å visualisere treet
     def print_tree(self):
         self.R.print_tree()
-
-
-
-    

@@ -1,8 +1,10 @@
 import json
 import warnings
+import uuid
 warnings.filterwarnings("ignore")
 import gym
 import numpy as np
+from MCTS.MCTS import MCTS as MCTSTREE
 import matplotlib.pyplot as plt
 from MCTSDNN.MCTSDNN import MCTSDNN
 from GameManager import GameManager
@@ -21,14 +23,14 @@ def plot_training(mcts: MCTSDNN, title):
     plt.xlabel('Iterations')
     plt.ylabel('Loss')
     plt.title(title+ f" Min: {np.min(losses)}")
-    plt.show()
+    plt.savefig(f"graphs/{uuid.uuid4()}.png")
 
     plt.figure(1)
     plt.plot(accuracy, label="Accuracy", color="Green")
     plt.xlabel('Iterations')
     plt.ylabel('Accuracy')
     plt.title(title + f" Max: {np.max(accuracy)}")
-    plt.show()
+    plt.savefig(f"graphs/{uuid.uuid4()}.png")
 
 
 def play(black_p, white_p, n=100):
@@ -59,23 +61,27 @@ def play(black_p, white_p, n=100):
 #print(state[2][0])
 #print(reward)
 #print(info)
+player_tree_only = MCTSTREE(go_env)
+#player_tree_only.train(2)
 
-player10 = MCTSDNN(go_env, size, "Go", kernel_size=5)
+player_tree_only2 = MCTSTREE(go_env)
+#player_tree_only2.train(2)
+#player10 = MCTSDNN(go_env, size, "Go", kernel_size=5)
 print("Go")
 
 #player10.print_tree()
-player100 = MCTSDNN(go_env, size, "Go2", kernel_size=5)
-print("Trener andre tre")
-#player100.train(10)
-player3 = MCTSDNN(go_env, size, "Go3", kernel_size=5)
-player100.train(10)
+player100 = MCTSDNN(go_env, size, "Go3", kernel_size=5)
+#print("Trener andre tre")
+player100.train(2)
+#player3 = MCTSDNN(go_env, size, "Go3", kernel_size=5)
+#player100.train(5)
 
-plot_training(player100, "Go2 - 20 rounds training")
+#plot_training(player100, "Go2 - 20 rounds training")
 #player10.train(10)
 
 print("Go2")
-player3.train(10)
-plot_training(player3, "Go3 - 20 rounds training")
+#player3.train(10)
+#plot_training(player3, "Go3 - 20 rounds training")
 #plot_training(player3, "Go3 - 5 rounds training")
 #player3.train(5)
 
@@ -86,10 +92,13 @@ print("Go2")
 #gm.play_as_white(player100)
 
 
-print("Go3 vs Go2")
-play(player3, player100, 1000)
-print("Go2 vs Go3")
-play(player100, player3, 1000)
+print("CNN vs Tree")
+play(player_tree_only, player_tree_only2, 1000)
+print("Tree vs CNN")
+play(player_tree_only2, player_tree_only, 1000)
+
+
+
 
 """
 print("5 vs 10")

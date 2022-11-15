@@ -30,8 +30,7 @@ class Node:
     def getN(self):
         if self.is_root():
             return self.n
-        else:
-            return self.parent.getN()
+        return self.parent.n
 
     def is_root(self):
         return self.parent is None
