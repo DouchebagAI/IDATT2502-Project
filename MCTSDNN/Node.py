@@ -57,6 +57,7 @@ class Node:
             return None
 
         # Find best child
+        
         best_child = max(self.children.values(), key=lambda x: x.get_value(type))
 
         return best_child

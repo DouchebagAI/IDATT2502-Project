@@ -12,15 +12,15 @@ import copy
 import numpy as np
 import gym
 """
-1. Reskaler modeller -> mindre
-2. Lagre treningsdata som primitive dataverdier
-3. Slett treet etter 1 gjennomkjøring
-4. Bruk value head-modellen til å predikere win/loss
+1. Reskaler modeller -> mindre ✅
+2. Lagre treningsdata som primitive dataverdier - Viktig❕
+3. Slett treet etter 1 gjennomkjøring - 
+4. Bruk value head-modellen til å predikere win/loss 
 5. Undersøk batch size
 6. Refaktorere kode (bruker mye av samme metoder 2 ganger)
 7. Lagre treningsdata / testdata som json
 8. Kernel-size -> 3
-9. 
+9. Bytt til value head model etter x-antall gjennomkjølringer
 """
 
 class MCTSDNN:
@@ -33,20 +33,23 @@ class MCTSDNN:
         if model is "Go2":
             self.model = GoCNN(self.size).to(self.device)
 
-        self.value_model = GoCNNValue(self.size, 5)
+        self.value_model = GoCNNValue(self.size, 5).to(self.device)
         self.move_count = 0
         self.env = env
         self.R = Node(None, None)
         self.current_node = self.R
         self.node_count = 0
-
+        self.amountOfSims = 0
 
         self.training_win = []
         self.test_win = []
-
-
-        self.losses = []
-        self.accuracy = []
+        
+        self.model_losses = []
+        self.model_accuracy = []
+        
+        self.value_model_losses = []
+        self.value_model_accuracy = []
+        
         self.training_data = []
         self.test_data = []
 
@@ -80,7 +83,6 @@ class MCTSDNN:
         return action
 
     def expand(self):
-        
         # Create all valid children nodes
         valid_moves = self.env.valid_moves()
         for move in range(len(valid_moves)):
@@ -88,30 +90,42 @@ class MCTSDNN:
                 new_node = Node(self.current_node, move)
                 self.current_node.children.update({(move, new_node)})
                 self.node_count += 1
-
-        for i in range(300):
+        
+        for i in range(50):
             self.simulate(self.current_node)
-
-        self.current_node.state = self.env.state()
-
+            
+        self.amountOfSims += 1
+        
+        # Add to current node
         if(random.randint(1,99) <= 33):
-            self.test_data.append(self.current_node)
+            y_t = np.zeros(1)
+            y_t[0] = self.current_node.v
+            self.test_data.append((self.env.state(), self.get_target(self.current_node)))
+            self.test_win.append((self.env.state(), y_t))
         else:
-            self.training_data.append(self.current_node)
+            y_t = np.zeros(1)
+            y_t[0] = self.current_node.v
+            self.training_data.append((self.env.state(), self.get_target(self.current_node)))
+            self.training_win.append((self.env.state(), y_t))
 
-
-
+        # Add to children to current node
         for i in self.current_node.children.values():
             env_copy  = copy.deepcopy(self.env)
             state, reward, done, _ = env_copy.step(i.action)
-            i.state = state
-                        
+                                
             if(random.randint(1,99) <= 33):
-                self.test_data.append(i)
+                y_t = np.zeros(1)
+                y_t[0] = i.v
+                self.test_data.append((state, self.get_target(i)))
+                self.test_win.append((state, y_t))
             else:
-                self.training_data.append(i)
-            
-
+                y_t = np.zeros(1)
+                y_t[0] = i.v
+                self.training_data.append((state, self.get_target(i)))
+                self.training_win.append((state,y_t))
+                
+                
+    
 
         self.current_node = self.current_node.best_child(self.get_type())
         
@@ -134,32 +148,33 @@ class MCTSDNN:
         """
         return self.current_node.action
 
+
+    def get_target(self, node: Node):
+        y_t = np.zeros(self.size**2+1)
+        for i in node.children.values():
+            y_t[i.action] = i.get_value_default(self.get_type())
+        
+        return y_t
+        
+
     def simulate(self, node):
-
-
+        print("Simulating", self.amountOfSims)
         env_copy = copy.deepcopy(self.env)
-
         actionFromNode = node.best_child(self.get_type()).action
         state, reward, done, _ = env_copy.step(actionFromNode)
-
-        while not done:
-            action = self.play_policy_greedy(env_copy)
-            state, _, done, _ = env_copy.step(action)
-
-        win = np.zeros(3)
-        if  env_copy.winner() == 1:
-            win[0] = 1
-        if env_copy.winner() == 0:
-            win[1] = 1
-        if env_copy.winner() == -1:
-            win[2] = 1
-            
-        if(random.randint(1,99) <= 33):
-            self.test_win.append((state, win))
+        
+        if( self.amountOfSims > 30):
+            x_tens = torch.tensor(state, dtype=torch.float).to(self.device)
+            v = self.value_model.f(x_tens.reshape(-1, 6,self.size, self.size).float()).cpu().detach().item()
+            print(v)
+            self.backpropagate(node.children[actionFromNode], v)
         else:
-            self.training_win.append((state, win))
+            while not done:
+                action = self.play_policy_greedy(env_copy)
+                state, _, done, _ = env_copy.step(action)
 
-        self.backpropagate(node.children[actionFromNode], env_copy.winner())
+
+            self.backpropagate(node.children[actionFromNode], env_copy.winner())
         return node
             
     
@@ -222,29 +237,20 @@ class MCTSDNN:
         y_train = []
 
         #print(self.states[0][1])
-        t = 0
-        for i in data:
-            y_t = np.zeros(self.size**2+1)
-            for n in i.children.values():
-                y_t[n.action] = n.get_value_default(n.get_type())
-                #print(y_t)
-
-            if sum(y_t) != 0:
-                y_train.append(y_t)
-                x_train.append(i.state)
-                #print(f"board: {x_train[t][0]-x_train[t][1]}x: {x_train[t][2]}, y: {y_train[t]}")
-                t += 1
+        for i, tup in enumerate(data):
+            
+            y_train.append(tup[1])
+            x_train.append(tup[0])
 
         x_tens = torch.tensor(x_train, dtype=torch.float).reshape(-1,6,self.size, self.size).float().to(self.device)
-
+    
         y_tens = torch.tensor(y_train, dtype=torch.float).float().to(self.device)
 
         return x_tens, y_tens
 
-    def get_training_data(self):
-        
-        x_train, y_train = self.data_to_tensor(self.training_data)
-        x_test, y_test = self.data_to_tensor(self.test_data)
+    def get_training_data(self, train, test):
+        x_train, y_train = self.data_to_tensor(train)
+        x_test, y_test = self.data_to_tensor(test)
 
         batch = 32
         x_train_batches = torch.split(x_train, batch)
@@ -253,57 +259,28 @@ class MCTSDNN:
         y_train_batches = torch.split(y_train, batch)
         return x_train_batches, y_train_batches, x_test, y_test
 
-    def get_value_training_data(self):
-        x_train, y_train = self.value_data_to_tensor(self.training_win)
-        x_test, y_test = self.value_data_to_tensor(self.test_win)
 
-        batch = 32
-        x_train_batches = torch.split(x_train, batch)
-        # print(len(x_train_batches))
-        # print(x_train_batches[0])
-        y_train_batches = torch.split(y_train, batch)
-        return x_train_batches, y_train_batches, x_test, y_test
-        
-    def train_model(self):
-        
-        x_train_batches, y_train_batches, x_test, y_test = self.get_training_data()
-
+    def train_model(self, model, function, loss_list, acc_list):
+        x_train_batches, y_train_batches, x_test, y_test = function
         # Optimize: adjust W and b to minimize loss using stochastic gradient descent
-        optimizer = torch.optim.Adam(self.model.parameters(), 0.0001)
+        optimizer = torch.optim.Adam(model.parameters(), 0.0001)
         
         for _ in range(1000):
             for batch in range(len(x_train_batches)):
-                self.model.loss(x_train_batches[batch], y_train_batches[batch]).backward()  # Compute loss gradients
-                self.losses.append(self.model.loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
+                model.loss(x_train_batches[batch], y_train_batches[batch]).backward()  # Compute loss gradients
+                loss_list.append(model.loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
                 optimizer.step()  # Perform optimization by adjusting W and b,
                 optimizer.zero_grad()  # Clear gradients for next step
-            self.accuracy.append(self.model.accuracy(x_test, y_test).cpu().detach())
-            # print(f"Loss: {self.model.loss(x_test, y_test)}")
-            print(f"Accuracy: {self.model.accuracy(x_test, y_test)}")
-
-    def train_value_model(self):
-        x_train_batches, y_train_batches, x_test, y_test = self.get_value_training_data()
-
-        # Optimize: adjust W and b to minimize loss using stochastic gradient descent
-        optimizer = torch.optim.Adam(self.model.parameters(), 0.0001)
-
-        for _ in range(1000):
-            for batch in range(len(x_train_batches)):
-                self.model.loss(x_train_batches[batch], y_train_batches[batch]).backward()  # Compute loss gradients
-                self.losses.append(self.model.loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
-                optimizer.step()  # Perform optimization by adjusting W and b,
-                optimizer.zero_grad()  # Clear gradients for next step
-            self.accuracy.append(self.model.accuracy(x_test, y_test).cpu().detach())
-
-        print(f"Loss value model: {self.model.loss(x_test, y_test)}")
-        print(f"Accuracy value model: {self.model.accuracy(x_test, y_test)}")
-        print(len(self.training_win))
-
+            acc_list.append(model.accuracy(x_test, y_test).cpu().detach())
+        # print(f"Loss: {self.model.loss(x_test, y_test)}")
+        print(f"Accuracy: {model.accuracy(x_test, y_test)}")
+        print(len(x_test))
+        
 
     def get_accuracy(self):
-        if len(self.accuracy) == 0:
+        if len(self.model_accuracy) == 0:
             return 0
-        return np.max(self.accuracy)
+        return np.max(self.model_accuracy)
         
     def backpropagate(self, node: Node, v):
         
@@ -329,15 +306,15 @@ class MCTSDNN:
                 _, _, done, _ = self.env.step(action)
                     
                 #self.env.render("terminal")
+            
             self.backpropagate(self.current_node, self.env.winner())
+            print("Training network")
+            self.train_model(self.model, self.get_training_data(self.training_data, self.test_data), self.model_losses, self.model_accuracy)
+            self.train_model(self.value_model, self.get_training_data(self.training_win, self.test_win), self.value_model_losses, self.value_model_accuracy)
+            self.R = Node(None, None)
             self.reset()
-            if i % 5 is 0 and i != 0:
-                #self.train_model()
-                pass
-        print("Training network")
+           
         print(len(self.training_win))
-        self.train_model()
-        self.train_value_model()
     
     def opponent_turn_update(self, move):
         self.move_count += 1
