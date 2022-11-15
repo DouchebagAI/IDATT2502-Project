@@ -62,17 +62,17 @@ def play(black_p, white_p, n=100):
 #print(reward)
 #print(info)
 player_tree_only = MCTSTREE(go_env)
-player_tree_only.train(2)
+#player_tree_only.train(2)
 
 player_tree_only2 = MCTSTREE(go_env)
-player_tree_only2.train(2)
+#player_tree_only2.train(2)
 #player10 = MCTSDNN(go_env, size, "Go", kernel_size=5)
 print("Go")
 
 #player10.print_tree()
-#player100 = MCTSDNN(go_env, size, "Go", kernel_size=5)
+player100 = MCTSDNN(go_env, size, "Go2", kernel_size=3)
 #print("Trener andre tre")
-#player100.train(10)
+player100.train(2)
 #player3 = MCTSDNN(go_env, size, "Go3", kernel_size=5)
 #player100.train(5)
 
@@ -96,6 +96,9 @@ print("CNN vs Tree")
 play(player_tree_only, player_tree_only2, 1000)
 print("Tree vs CNN")
 play(player_tree_only2, player_tree_only, 1000)
+
+
+
 
 """
 print("5 vs 10")

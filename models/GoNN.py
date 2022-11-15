@@ -19,11 +19,11 @@ class GoNN(nn.Module):
         # Relu
         self.logits = nn.Sequential(
             nn.ReLU(),
-            nn.Conv2d(6, size**2, kernel_size=kernel_size, padding=2),
+            nn.Conv2d(6, size**2, kernel_size=3, padding=2),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2),
             nn.Flatten(),
-            nn.Linear(lin, size**4),
+            nn.Linear(100, size**4),
             nn.Linear(1*size**4, size**2+1)
         )
         self.logits.to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))

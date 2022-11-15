@@ -16,14 +16,14 @@ class GoDCNN(nn.Module):
         # Conv
         # Relu
         self.logits = nn.Sequential(
-            nn.Conv2d(6, size**2, kernel_size=5, padding=2),
+            nn.Conv2d(6, size**2, kernel_size=3, padding=2),
             nn.ReLU(),
             #nn.Dropout(0.2),
             nn.MaxPool2d(kernel_size=2),
             #nn.MaxPool2d(kernel_size=2),
-            nn.Conv2d(size**2, size**3, kernel_size=5, padding=2),
+            nn.Conv2d(size**2, size**3, kernel_size=3, padding=2),
             nn.ReLU(),
-            nn.Conv2d(size ** 3, size ** 4, kernel_size=5, padding=2),
+            nn.Conv2d(size ** 3, size ** 4, kernel_size=3, padding=2),
             nn.ReLU(),
             #nn.Dropout(0.2),
             nn.MaxPool2d(kernel_size=2),
