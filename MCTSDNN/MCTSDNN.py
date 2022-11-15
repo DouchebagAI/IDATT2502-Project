@@ -1,6 +1,9 @@
 import math
 import random
-
+from models.GoCNN import GoCNN
+from models.GoDCNN import GoDCNN
+from models.GoNN import GoNN
+from models.CNNValue import GoCNNValue
 from MCTSDNN.Node import Node, Type
 from enum import Enum
 import torch
@@ -8,148 +11,7 @@ import torch.nn as nn
 import copy
 import numpy as np
 import gym
-#0.76
-class GoDCNN(nn.Module):
-    def __init__(self, size=3):
-        super().__init__()
-        self.size = size
-        # Conv
-        # Relu
-        self.logits = nn.Sequential(
-            nn.Conv2d(6, size**2, kernel_size=5, padding=2),
-            nn.ReLU(),
-            #nn.Dropout(0.2),
-            nn.MaxPool2d(kernel_size=2),
-            #nn.MaxPool2d(kernel_size=2),
-            nn.Conv2d(size**2, size**3, kernel_size=5, padding=2),
-            nn.ReLU(),
-            nn.Conv2d(size ** 3, size ** 4, kernel_size=5, padding=2),
-            nn.ReLU(),
-            #nn.Dropout(0.2),
-            nn.MaxPool2d(kernel_size=2),
-            nn.Flatten(),
-            nn.Linear(625, size**4),
-            nn.Flatten(),
-            nn.Linear(1*size**4, size**2+1)
-        )
-        self.logits.to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
 
-    def f(self, x):
-        return torch.softmax(self.logits(x), dim=1)
-
-    # Cross Entropy loss
-    def loss(self, x, y):
-        return nn.functional.cross_entropy(self.logits(x),  y.argmax(1))
-
-    # Accuracy
-    def accuracy(self, x, y):
-        return torch.mean(torch.eq(self.f(x).argmax(1), y.argmax(1)).float())
-
-#0.665
-class GoCNN(nn.Module):
-    def __init__(self, size=3):
-        super().__init__()
-        self.size = size
-        # Conv
-        # Relu
-        self.logits = nn.Sequential(
-            nn.Conv2d(6, size ** 2, kernel_size=5, padding=2),
-            nn.ReLU(),
-            nn.Dropout(0.2),
-            nn.MaxPool2d(kernel_size=2),
-            #nn.MaxPool2d(kernel_size=2),
-            nn.Conv2d(size ** 2, size ** 3, kernel_size=5, padding=2),
-            nn.ReLU(),
-            nn.Dropout(0.2),
-            nn.Conv2d(size ** 3, size ** 4, kernel_size=5, padding=2),
-            nn.ReLU(),
-            nn.Dropout(0.2),
-            nn.MaxPool2d(kernel_size=2),
-            nn.Flatten(),
-            nn.Linear(625, size ** 4),
-            nn.Flatten(),
-            nn.Linear(1 * size ** 4, size ** 2 + 1)
-        )
-        """
-        0.0002 loss
-        0.73 acc
-        self.logits = nn.Sequential(
-            nn.Conv2d(6, size ** 2, kernel_size=5, padding=2),
-            nn.ReLU(),
-            # nn.Dropout(0.2),
-            nn.MaxPool2d(kernel_size=2),
-            # nn.MaxPool2d(kernel_size=2),
-            nn.Conv2d(size ** 2, size ** 3, kernel_size=5, padding=2),
-            nn.ReLU(),
-            nn.Conv2d(size ** 3, size ** 4, kernel_size=5, padding=2),
-            nn.ReLU(),
-            nn.Conv2d(size ** 4, size ** 5, kernel_size=5, padding=2),
-            nn.ReLU(),
-            # nn.Dropout(0.2),
-            nn.MaxPool2d(kernel_size=2),
-            nn.Flatten(),
-            nn.Linear(3125, size ** 4),
-            nn.Flatten(),
-            nn.Linear(1 * size ** 4, size ** 2 + 1)
-        )
-        
-        self.logits = nn.Sequential(
-            nn.Conv2d(6, size**2, kernel_size=5, padding=2),
-            nn.ReLU(),
-            #nn.Dropout(0.2),
-            nn.MaxPool2d(kernel_size=2),
-            #nn.MaxPool2d(kernel_size=2),
-            nn.Conv2d(size**2, size**3, kernel_size=5, padding=2),
-            nn.ReLU(),
-            #nn.Dropout(0.2),
-            nn.MaxPool2d(kernel_size=2),
-            nn.Flatten(),
-            nn.Linear(125, size**4),
-            nn.Flatten(),
-            nn.Linear(1*size**4, size**2+1)
-        )
-        """
-        self.logits.to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-
-    def f(self, x):
-        return torch.softmax(self.logits(x), dim=1)
-
-    # Cross Entropy loss
-    def loss(self, x, y):
-        return nn.functional.cross_entropy(self.logits(x),  y.argmax(1))
-
-    # Accuracy
-    def accuracy(self, x, y):
-        return torch.mean(torch.eq(self.f(x).argmax(1), y.argmax(1)).float())
-#0.79
-class GoNN(nn.Module):
-    def __init__(self, size=3, kernel_size = 3):
-        super().__init__()
-        self.size = size
-        lin = 100 if kernel_size == 5 else 225
-        # Conv
-        # Relu
-        self.logits = nn.Sequential(
-            nn.ReLU(),
-            nn.Conv2d(6, size**2, kernel_size=kernel_size, padding=2),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2),
-            nn.Flatten(),
-            nn.Linear(lin, size**4),
-            nn.Linear(1*size**4, size**2+1)
-        )
-        self.logits.to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-
-    def f(self, x):
-        return torch.softmax(self.logits(x), dim=1)
-
-    # Cross Entropy loss
-    def loss(self, x, y):
-        return nn.functional.cross_entropy(self.logits(x), y.argmax(1))
-
-    # Accuracy
-    def accuracy(self, x, y):
-        return torch.mean(torch.eq(self.f(x).argmax(1), y.argmax(1)).float())
 
 class MCTSDNN:
 
@@ -163,12 +25,16 @@ class MCTSDNN:
         if model is "Go3":
             self.model = GoDCNN(self.size).to(self.device)
 
+        self.value_model = GoCNNValue(self.size, 5)
         self.move_count = 0
         self.env = env
         self.R = Node(None, None)
         self.current_node = self.R
         self.node_count = 0
-        self.states = []
+        self.training_win = []
+        self.test_win = []
+
+
         self.losses = []
         self.accuracy = []
         self.training_data = []
@@ -213,7 +79,7 @@ class MCTSDNN:
                 self.current_node.children.update({(move, new_node)})
                 self.node_count += 1
 
-        for i in range(500):
+        for i in range(300):
             self.simulate(self.current_node)
 
         self.current_node.state = self.env.state()
@@ -273,6 +139,19 @@ class MCTSDNN:
             action = env_copy.uniform_random_action()
             state, _, done, _ = env_copy.step(action)
 
+        win = np.zeros(3)
+        if  env_copy.winner() == 1:
+            win[0] = 1
+        if env_copy.winner() == 0:
+            win[1] = 1
+        if env_copy.winner() == -1
+            win[2] = 1
+            
+        if(random.randint(1,99) <= 33):
+                self.test_win.append((state, win))
+            else:
+                self.training_win.append((state, win))
+
         self.backpropagate(node.children[actionFromNode], env_copy.winner())
         return node
             
@@ -292,6 +171,7 @@ class MCTSDNN:
         
         valid_moves = env.valid_moves()
         
+        
         if valid_moves[index.item()] == 0.0:
             #print("Invalid move")
             return env.uniform_random_action()
@@ -305,14 +185,29 @@ class MCTSDNN:
             # Trene på batch
             # legge i testsdata
             # sammenligne forskjellige mpter å velge på (prob, argmax)
-        if index.item() == 9:
-            #print("Passed")
-            pass
+    
         return index.item() 
     
     def value_head(self, state):
         pass
 
+    def value_data_to_tensor(self, data):
+        x_train = []
+        random.shuffle(data)
+        y_train = []
+
+        #print(self.states[0][1])
+        t = 0
+        for i in range(len(data)):
+            y_t = data[i][1]
+            y_train.append(y_t)
+            x_train.append(list(data)[i][1].state)
+
+        x_tens = torch.tensor(x_train, dtype=torch.float).reshape(-1,6,self.size, self.size).float().to(self.device)
+
+        y_tens = torch.tensor(y_train, dtype=torch.float).float().to(self.device)
+
+        return x_tens, y_tens
 
     def data_to_tensor(self, data):
         x_train = []
@@ -352,7 +247,7 @@ class MCTSDNN:
         return x_train_batches, y_train_batches, x_test, y_test
         
     def train_model(self):
-
+        
         x_train_batches, y_train_batches, x_test, y_test = self.get_training_data()
 
         # Optimize: adjust W and b to minimize loss using stochastic gradient descent
@@ -402,7 +297,7 @@ class MCTSDNN:
             if i % 5 is 0 and i != 0:
                 #self.train_model()
                 pass
-        
+        print("Training network")
         self.train_model()
         print(len(self.states))
     
