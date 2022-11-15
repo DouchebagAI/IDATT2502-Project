@@ -1,5 +1,6 @@
 import json
 import warnings
+import uuid
 warnings.filterwarnings("ignore")
 import gym
 import numpy as np
@@ -21,14 +22,14 @@ def plot_training(mcts: MCTSDNN, title):
     plt.xlabel('Iterations')
     plt.ylabel('Loss')
     plt.title(title+ f" Min: {np.min(losses)}")
-    plt.show()
+    plt.savefig(f"graphs/{uuid.uuid4()}.png")
 
     plt.figure(1)
     plt.plot(accuracy, label="Accuracy", color="Green")
     plt.xlabel('Iterations')
     plt.ylabel('Accuracy')
     plt.title(title + f" Max: {np.max(accuracy)}")
-    plt.show()
+    plt.savefig(f"graphs/{uuid.uuid4()}.png")
 
 
 def play(black_p, white_p, n=100):
@@ -68,7 +69,7 @@ player100 = MCTSDNN(go_env, size, "Go2", kernel_size=5)
 print("Trener andre tre")
 #player100.train(10)
 player3 = MCTSDNN(go_env, size, "Go3", kernel_size=5)
-player100.train(10)
+player100.train(2)
 
 plot_training(player100, "Go2 - 20 rounds training")
 #player10.train(10)

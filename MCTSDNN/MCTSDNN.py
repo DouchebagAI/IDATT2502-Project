@@ -171,6 +171,8 @@ class MCTSDNN:
         self.states = []
         self.losses = []
         self.accuracy = []
+        self.training_data = []
+        self.test_data = []
 
 
     def take_turn(self):
@@ -216,6 +218,10 @@ class MCTSDNN:
 
         self.current_node.state = self.env.state()
         self.states.append((self.env.state(), self.current_node))
+        if(random.randint(1,99) <= 33):
+            self.test_data.append((self.env.state(), self.current_node))
+        else:
+            self.training_data.append((self.env.state(), self.current_node))
 
 
 
@@ -224,6 +230,14 @@ class MCTSDNN:
             state, reward, done, _ = env_copy.step(i.action)
             i.state = state
             self.states.append((state, i))
+                        
+            if(random.randint(1,99) <= 33):
+                self.test_data.append((state, i))
+            else:
+                self.training_data.append((state, i))
+            
+            
+            
 
 
         self.current_node = self.current_node.best_child(self.get_type())
@@ -299,44 +313,42 @@ class MCTSDNN:
     def value_head(self, state):
         pass
 
-    def get_training_data(self):
+
+    def data_to_tensor(self, data):
         x_train = []
-        random.shuffle(self.states)
+        random.shuffle(data)
         y_train = []
 
         #print(self.states[0][1])
         t = 0
-        for i in range(len(self.states)):
+        for i in range(len(data)):
             y_t = np.zeros(self.size**2+1)
-            for n in self.states[i][1].children.values():
+            for n in data[i][1].children.values():
                 y_t[n.action] = n.get_value_default(n.get_type())
                 #print(y_t)
 
             if sum(y_t) != 0:
                 y_train.append(y_t)
-                x_train.append(list(self.states)[i][1].state)
+                x_train.append(list(data)[i][1].state)
                 #print(f"board: {x_train[t][0]-x_train[t][1]}x: {x_train[t][2]}, y: {y_train[t]}")
                 t += 1
 
-
-
-
-        
-        limit = math.floor(len(x_train)/3)
-        print(len(x_train))
         x_tens = torch.tensor(x_train, dtype=torch.float).reshape(-1,6,self.size, self.size).float().to(self.device)
 
         y_tens = torch.tensor(y_train, dtype=torch.float).float().to(self.device)
 
+        return x_tens, y_tens
 
-        x_test = x_tens[limit*2:]
-        y_test = y_tens[limit*2:]
+    def get_training_data(self):
+        
+        x_train, y_train = self.data_to_tensor(self.training_data)
+        x_test, y_test = self.data_to_tensor(self.test_data)
 
         batch = 200
-        x_train_batches = torch.split(x_tens[:limit*2], batch)
+        x_train_batches = torch.split(x_train, batch)
         #print(len(x_train_batches))
         #print(x_train_batches[0])
-        y_train_batches = torch.split(y_tens[:limit*2], batch)
+        y_train_batches = torch.split(y_train, batch)
         return x_train_batches, y_train_batches, x_test, y_test
         
     def train_model(self):
@@ -402,8 +414,6 @@ class MCTSDNN:
             new_node = Node(self.current_node, move)
             self.current_node.children.update({(move, new_node)})
             self.current_node = new_node
-        
-        
 
     def reset(self):
         self.move_count = 0
@@ -412,7 +422,3 @@ class MCTSDNN:
     # Metode for å visualisere treet
     def print_tree(self):
         self.R.print_tree()
-
-
-
-    
