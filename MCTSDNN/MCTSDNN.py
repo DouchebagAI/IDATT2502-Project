@@ -55,6 +55,27 @@ class GoCNN(nn.Module):
         self.logits = nn.Sequential(
             nn.Conv2d(6, size ** 2, kernel_size=5, padding=2),
             nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.MaxPool2d(kernel_size=2),
+            #nn.MaxPool2d(kernel_size=2),
+            nn.Conv2d(size ** 2, size ** 3, kernel_size=5, padding=2),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.Conv2d(size ** 3, size ** 4, kernel_size=5, padding=2),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.MaxPool2d(kernel_size=2),
+            nn.Flatten(),
+            nn.Linear(625, size ** 4),
+            nn.Flatten(),
+            nn.Linear(1 * size ** 4, size ** 2 + 1)
+        )
+        """
+        0.0002 loss
+        0.73 acc
+        self.logits = nn.Sequential(
+            nn.Conv2d(6, size ** 2, kernel_size=5, padding=2),
+            nn.ReLU(),
             # nn.Dropout(0.2),
             nn.MaxPool2d(kernel_size=2),
             # nn.MaxPool2d(kernel_size=2),
@@ -71,7 +92,7 @@ class GoCNN(nn.Module):
             nn.Flatten(),
             nn.Linear(1 * size ** 4, size ** 2 + 1)
         )
-        """
+        
         self.logits = nn.Sequential(
             nn.Conv2d(6, size**2, kernel_size=5, padding=2),
             nn.ReLU(),
@@ -190,7 +211,7 @@ class MCTSDNN:
                 self.current_node.children.update({(move, new_node)})
                 self.node_count += 1
 
-        for i in range(100):
+        for i in range(500):
             self.simulate(self.current_node)
 
         self.current_node.state = self.env.state()
@@ -275,7 +296,8 @@ class MCTSDNN:
             pass
         return index.item() 
     
-
+    def value_head(self, state):
+        pass
 
     def get_training_data(self):
         x_train = []
