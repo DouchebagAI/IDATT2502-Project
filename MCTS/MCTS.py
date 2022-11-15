@@ -60,7 +60,7 @@ class MCTS:
                 self.current_node.children.update({(move, new_node)})
                 self.node_count += 1
 
-        for _ in range(300):
+        for _ in range(100):
             self.simulate(self.current_node)
         
 

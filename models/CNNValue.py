@@ -37,8 +37,8 @@ class GoCNNValue(nn.Module):
 
     # Cross Entropy loss
     def loss(self, x, y):
-        return nn.functional.cross_entropy(self.logits(x), y.argmax(1))
+        return nn.functional.cross_entropy(self.logits(x), y)
 
     # Accuracy
     def accuracy(self, x, y):
-        return torch.mean(torch.eq(self.f(x).argmax(1), y.argmax(1)).float())
+        return torch.mean(torch.eq(self.f(x).argmax(1), y).float())

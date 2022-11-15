@@ -15,22 +15,24 @@ go_env = gym.make('gym_go:go-v0', size=size, komi=0, reward_method='real')
 
 gm = GameManager(go_env)
 
-def plot_training(mcts: MCTSDNN, title):
-    losses = np.array(mcts.losses)
-    accuracy = np.array(mcts.accuracy)
-    plt.figure(0)
+def plot_training(mcts: MCTSDNN, title, loss, acc):
+    losses = np.array(loss)
+    accuracy = np.array(acc)
+    plt.figure()
     plt.plot(losses, label="Loss", color = "blue")
     plt.xlabel('Iterations')
     plt.ylabel('Loss')
     plt.title(title+ f" Min: {np.min(losses)}")
-    plt.savefig(f"graphs/{uuid.uuid4()}.png")
+    plt.show()
+    #plt.savefig(f"graphs/{uuid.uuid4()}.png")
 
-    plt.figure(1)
+    plt.figure()
     plt.plot(accuracy, label="Accuracy", color="Green")
     plt.xlabel('Iterations')
     plt.ylabel('Accuracy')
     plt.title(title + f" Max: {np.max(accuracy)}")
-    plt.savefig(f"graphs/{uuid.uuid4()}.png")
+    plt.show()
+    #plt.savefig(f"graphs/{uuid.uuid4()}.png")
 
 
 def play(black_p, white_p, n=100):
@@ -73,6 +75,9 @@ print("Go")
 player100 = MCTSDNN(go_env, size, "Go2", kernel_size=3)
 #print("Trener andre tre")
 player100.train(2)
+plot_training(player100, "Model 1", player100.model_losses, player100.model_accuracy)
+plot_training(player100, "Model 2", player100.value_model_losses, player100.value_model_accuracy)
+player_tree_only2.train(5)
 #player3 = MCTSDNN(go_env, size, "Go3", kernel_size=5)
 #player100.train(5)
 
@@ -81,7 +86,7 @@ player100.train(2)
 
 print("Go2")
 #player3.train(10)
-#plot_training(player3, "Go3 - 20 rounds training")
+
 #plot_training(player3, "Go3 - 5 rounds training")
 #player3.train(5)
 
@@ -93,9 +98,9 @@ print("Go2")
 
 
 print("CNN vs Tree")
-play(player_tree_only, player_tree_only2, 1000)
+play(player100, player_tree_only, 1000)
 print("Tree vs CNN")
-play(player_tree_only2, player_tree_only, 1000)
+play(player_tree_only, player100, 1000)
 
 
 
