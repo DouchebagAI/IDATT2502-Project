@@ -62,7 +62,7 @@ class MCTSDNN:
             action = self.expand()
         else:
             self.current_node = self.current_node.best_child(self.get_type())
-            action =  self.current_node.action
+            action = self.current_node.action
         self.move_count += 1
         return action
 
@@ -72,13 +72,14 @@ class MCTSDNN:
         action : int
         if len(self.current_node.children) == 0:
             action = self.play_policy_prob(self.env)
+            """
             new_node = Node(self.current_node, action)
             self.current_node.children.update({(action, new_node)})
             self.current_node = new_node
+            """
         else:
             self.current_node = self.current_node.best_child(self.get_type())
             action =  self.current_node.action
-            valid_moves = self.env.valid_moves()
         self.move_count += 1
         return action
 
@@ -94,7 +95,7 @@ class MCTSDNN:
         for i in range(100):
             self.simulate(self.current_node)
             
-        self.amountOfSims += 1
+
         
         # Add to current node
         if(random.randint(1,99) <= 33):
@@ -130,8 +131,6 @@ class MCTSDNN:
                     self.training_data.append((state, y))
                 self.training_win.append((state,y_t))
                 
-                
-    
 
         self.current_node = self.current_node.best_child(self.get_type())
         
@@ -169,7 +168,7 @@ class MCTSDNN:
         actionFromNode = node.best_child(self.get_type()).action
         state, reward, done, _ = env_copy.step(actionFromNode)
         
-        if( self.amountOfSims > 30):
+        if( self.amountOfSims > 3):
             x_tens = torch.tensor(state, dtype=torch.float).to(self.device)
             v = self.value_model.f(x_tens.reshape(-1, 6,self.size, self.size).float()).cpu().detach().item()
             #print(v)
@@ -200,9 +199,7 @@ class MCTSDNN:
         # state, _, _, _ = env_copy.step(node.action)
         # node.state = self.env.state()[0] - self.env.state()[1
         x_tens = torch.tensor(env.state(), dtype=torch.float).to(self.device)
-
         y = self.model.f(x_tens.reshape(-1, 6, self.size, self.size).float())
-
 
         if self.get_type() == Type.BLACK:
             m = nn.Softmax(dim=1)
@@ -214,7 +211,6 @@ class MCTSDNN:
 
 
         action = self.action_based_on_prob(index[0])
-
         valid_moves = env.valid_moves()
 
         if valid_moves[action] == 0.0:
@@ -253,10 +249,7 @@ class MCTSDNN:
             # legge i testsdata
             # sammenligne forskjellige mpter å velge på (prob, argmax)
     
-        return index.item() 
-    
-    def value_head(self, state):
-        pass
+        return index.item()
 
     def data_to_tensor(self, data):
         x_train = []
@@ -267,10 +260,6 @@ class MCTSDNN:
         for i, tup in enumerate(data):
             x_train.append(tup[0])
             y_train.append(tup[1])
-
-
-
-
 
         x_tens = torch.tensor(x_train, dtype=torch.float).reshape(-1,6,self.size, self.size).float().to(self.device)
     
@@ -293,7 +282,7 @@ class MCTSDNN:
     def train_model(self, model, function, loss_list, acc_list):
         x_train_batches, y_train_batches, x_test, y_test = function
         # Optimize: adjust W and b to minimize loss using stochastic gradient descent
-        optimizer = torch.optim.Adam(model.parameters(), 0.001)
+        optimizer = torch.optim.Adam(model.parameters(), 0.0001)
         
         for _ in range(1000):
             for batch in range(len(x_train_batches)):
@@ -331,14 +320,18 @@ class MCTSDNN:
             # Nullstiller brettet
             self.env.reset()
             done = False
-            while not done:
+            rounds = 0
+            while not done and rounds < 80:
                 # Gjør et trekk
                 action = self.take_turn()
                 _, _, done, _ = self.env.step(action)
+                print(rounds)
+                rounds+=1
                     
-                self.env.render("terminal")
+                #self.env.render("terminal")
             
             self.backpropagate(self.current_node, self.env.winner())
+            self.amountOfSims += 1
             print("Training network")
 
             self.train_model(self.model, self.get_training_data(self.training_data, self.test_data),

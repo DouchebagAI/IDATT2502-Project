@@ -74,87 +74,17 @@ print("Go")
 #player10.print_tree()
 player100 = MCTSDNN(go_env, size, "Go2", kernel_size=3)
 #print("Trener andre tre")
-player100.train(2)
+player100.train(10)
 plot_training(player100, "Model 1", player100.model_losses, player100.model_accuracy)
 plot_training(player100, "Model 2", player100.value_model_losses, player100.value_model_accuracy)
 player_tree_only2.train(5)
-#player3 = MCTSDNN(go_env, size, "Go3", kernel_size=5)
-#player100.train(5)
 
-#plot_training(player100, "Go2 - 20 rounds training")
-#player10.train(10)
-
-print("Go2")
-#player3.train(10)
-
-#plot_training(player3, "Go3 - 5 rounds training")
-#player3.train(5)
-
-print("Go2")
-#player10.train(10)
-#plot_training(player3, "Go1 - 20 rounds training")
-#player100.print_tree()
-#gm.play_as_white(player100)
 
 
 print("CNN vs Tree")
 play(player100, player_tree_only, 1000)
 print("Tree vs CNN")
 play(player_tree_only, player100, 1000)
-
-
-
-
-"""
-print("5 vs 10")
-play(player10, player100)
-print("10 vs 5")
-play(player100, player10)
-
-print("5 vs 20")
-play(player10, player3)
-print("20 vs 5")
-play(player3, player10)
-
-print("20 vs 10")
-play(player3, player100)
-print("10 vs 20")
-play(player100, player3)
-"""
-#
-"""""""""
-for i in range(5): 
-    mcts = MCTSDNN(go_env)
-    mcts.train_simulate
-    mctsIterations.append(mcts)
-
-for index in range(len(mctsIterations)-1):
-    best_wins = 0
-    other_wins = 0
-    tie = 0
-    for _ in range(10):
-        outcome = gm.test(mctsIterations[index], mctsIterations[len(mctsIterations)-1])
-        match outcome: 
-            case 1:
-                other_wins += 1
-            case -1:
-                best_wins += 1
-            case _:
-                tie += 1
-        outcome = gm.test(mctsIterations[len(mctsIterations)-1], mctsIterations[index])
-        match outcome: 
-            case 1:
-                best_wins += 1
-            case -1:
-                other_wins += 1
-            case _:
-                tie += 1 
-    print(f"round: {index}, "f"Best wins: {best_wins}", f"Other wins: {other_wins}", f"Tie: {tie}")
-        
-        """
-        
-
-
 
 
     
