@@ -54,7 +54,7 @@ class MCTSDNN:
 
 
     def take_turn(self):
-        # Hvis ingen barn, exland
+        # Hvis ingen barn, exlandasd
         # Hvis ikke, velg det barnet med høyest verdi
         action : int
         if len(self.current_node.children) == 0:
