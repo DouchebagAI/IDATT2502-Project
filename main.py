@@ -50,13 +50,14 @@ def play(black_p, white_p, n=100):
 
     print("Go: black: Go2: white")
     print(f"black wins: {black} white wins: {white}  tie: {tie}")
-
+    """
     fig = plt.figure()
     ax = fig.add_axes([0, 0, 1, 1])
     langs = ['black', 'white', 'tie']
     students = [black, white, tie]
     ax.bar(langs, students)
     plt.show()
+    """
 
 #go_env.reset()
 #state, reward, done, info = go_env.step(9)
@@ -64,29 +65,32 @@ def play(black_p, white_p, n=100):
 #print(reward)
 #print(info)
 player_tree_only = MCTSTREE(go_env)
-#player_tree_only.train(2)
+print("Trener standard MCTS")
+#player_tree_only.train(5)
 
-player_tree_only2 = MCTSTREE(go_env)
+#player_tree_only2 = MCTSTREE(go_env)
 #player_tree_only2.train(2)
 #player10 = MCTSDNN(go_env, size, "Go", kernel_size=5)
-print("Go")
 
 #player10.print_tree()
-player100 = MCTSDNN(go_env, size, "Go2", kernel_size=3)
+playerCNN = MCTSDNN(go_env, size, "Go2", kernel_size=3)
 #print("Trener andre tre")
-player100.train(10)
-plot_training(player100, "Model 1", player100.model_losses, player100.model_accuracy)
-plot_training(player100, "Model 2", player100.value_model_losses, player100.value_model_accuracy)
-player_tree_only2.train(5)
+print("Trener MCTS /m CNN")
 
 
 
+
+
+#gm.play_tournament()
+playerCNN.train(10)
+player_tree_only.train(5)
 print("CNN vs Tree")
-play(player100, player_tree_only, 1000)
+play(playerCNN, player_tree_only, 1000)
 print("Tree vs CNN")
-play(player_tree_only, player100, 1000)
+play(player_tree_only, playerCNN, 1000)
 
-
+plot_training(playerCNN, "Model 1", playerCNN.model_losses, playerCNN.model_accuracy)
+plot_training(playerCNN, "Model 2", playerCNN.value_model_losses, playerCNN.value_model_accuracy)
     
 
 

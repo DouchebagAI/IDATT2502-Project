@@ -1,6 +1,8 @@
 from MCTSDNN.MCTSDNN import MCTSDNN
 
 import copy
+import torch
+import matplotlib.pyplot as plt
 
 class GameManager:
     def __init__(self, env):
@@ -46,11 +48,45 @@ class GameManager:
             action = mcts2.take_turn_play()
             _, _, done, _ = self.env.step(action)
             mcts1.opponent_turn_update(action)
-        mcts1.backpropagate(mcts1.current_node, self.env.winner())
-        mcts2.backpropagate(mcts2.current_node, self.env.winner())
+        #mcts1.backpropagate(mcts1.current_node, self.env.winner())
+        #mcts2.backpropagate(mcts2.current_node, self.env.winner())
         return self.env.winner()
 
 
+    def play_tournament(self):
+        # Extracting all models
+        players = []
+        print("Henter ut alle spillerne")
+        for i in range(8):
+            model = torch.load(f"models/SavedModels/{i}.pt")
+            model.eval()
+            # Convert to tree
+            tree = MCTSDNN(self.env, 5, "Go2", kernel_size=3)
+            tree.model = model
+            players.append(tree)
+        win_dict = dict()
+        # Playing the tournament
+        print("Playing turnering")
+        for i in range(1,8):
+            print(f"Round {i}")
+            numberOfWins = 0
+            for j in range(1000):
+                if(j%2 == 0):
+                    winner = self.test(players[0], players[i])
+                    if winner == 1:
+                        numberOfWins += 1
+                else:
+                    winner = self.test(players[i], players[0])
+                    if winner == -1:
+                        numberOfWins += 1
+            # Update win dict
+            win_dict= {i: numberOfWins/1000}
+            print(f"Player 0 won {numberOfWins} times against player {i}")
+        # Plot the results
+        plt.figure()
+        plt.bar(win_dict.keys(), win_dict.values())
+        plt.savefig("models/results.png")
+        
     def print_winner(self):
             if self.env.winner() == 1:
                 print("Black Won")

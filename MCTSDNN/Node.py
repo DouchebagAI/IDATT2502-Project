@@ -43,6 +43,9 @@ class Node:
     def get_type(self):
         return Type.WHITE if self.parent.state[2][0][0] == 1 else Type.BLACK
 
+    def V(self):
+        return self.v/self.n
+
     def is_root(self):
         return self.parent is None
 

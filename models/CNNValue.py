@@ -33,11 +33,11 @@ class GoCNNValue(nn.Module):
         self.logits.to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
 
     def f(self, x):
-        return torch.softmax(self.logits(x), dim=1)
+        return self.logits(x)
 
     # Cross Entropy loss
     def loss(self, x, y):
-        return nn.functional.cross_entropy(self.logits(x), y)
+        return nn.functional.l1_loss(self.logits(x), y)
 
     # Accuracy
     def accuracy(self, x, y):
