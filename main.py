@@ -10,7 +10,8 @@ from MCTSDNN.MCTSDNN import MCTSDNN
 from GameManager import GameManager
 size = 5
 go_env = gym.make('gym_go:go-v0', size=size, komi=0, reward_method='real')
-
+go_env.reset()
+print(type(go_env.state()))
 #print(go_env.valid_moves())
 
 gm = GameManager(go_env)
@@ -77,12 +78,12 @@ playerCNN = MCTSDNN(go_env, size, "Go2", kernel_size=3)
 #print("Trener andre tre")
 print("Trener MCTS /m CNN")
 
-
+#print(np.load("models/training_data/value_model.npy", allow_pickle=True))
 
 
 
 #gm.play_tournament()
-playerCNN.train(10)
+playerCNN.train(8)
 player_tree_only.train(5)
 print("CNN vs Tree")
 play(playerCNN, player_tree_only, 1000)

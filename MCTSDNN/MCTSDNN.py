@@ -1,5 +1,7 @@
 import math
 import random
+import uuid
+
 from models.GoCNN import GoCNN
 from models.GoDCNN import GoDCNN
 from models.GoNN import GoNN
@@ -85,7 +87,7 @@ class MCTSDNN:
                 self.current_node.children.update({(move, new_node)})
                 self.node_count += 1
         
-        for i in range(300):
+        for i in range(500):
             self.simulate(self.current_node)
 
         # Add to current node
@@ -144,7 +146,6 @@ class MCTSDNN:
         if( self.amountOfSims > 8):
             x_tens = torch.tensor(state, dtype=torch.float).to(self.device)
             v = self.value_model.f(x_tens.reshape(-1, 6,self.size, self.size).float()).cpu().detach().item()
-            #print(v)
             if v > 0.33:
                 self.backpropagate(node.children[actionFromNode], 1)
             if v < -0.33:
@@ -331,8 +332,13 @@ class MCTSDNN:
         
             self.R = Node(None, None)
             self.reset()
-           
-        print(len(self.training_win))
+
+        np.save(f"models/training_data/model_{len(self.training_data)}_{uuid.uuid4()}.npy", self.training_data, allow_pickle=True)
+        np.save(f"models/training_data/value_model_{len(self.training_win)}_{uuid.uuid4()}.npy", self.training_win, allow_pickle=True)
+        np.save(f"models/test_data/model_{len(self.test_data)}_{uuid.uuid4()}.npy", self.test_data,
+                allow_pickle=True)
+        np.save(f"models/test_data/value_model_{len(self.test_win)}_{uuid.uuid4()}.npy", self.test_win,
+                allow_pickle=True)
     
     def opponent_turn_update(self, move):
         self.move_count += 1
