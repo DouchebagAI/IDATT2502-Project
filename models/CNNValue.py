@@ -27,9 +27,9 @@ class GoCNNValue(nn.Module):
             nn.MaxPool2d(kernel_size=2),
             nn.Flatten(),
             nn.Linear(500, size ** 4),
-            nn.Flatten(),
             nn.Linear(1 * size ** 4, 1)
         )
+
         self.logits.to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
 
     def f(self, x):
@@ -41,4 +41,4 @@ class GoCNNValue(nn.Module):
 
     # Accuracy
     def accuracy(self, x, y):
-        return torch.mean(torch.eq(self.f(x).argmax(1), y).float())
+        return torch.mean(1-torch.abs(torch.sub(self.f(x).argmax(1), y)))

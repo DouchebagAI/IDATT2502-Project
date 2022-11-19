@@ -23,7 +23,7 @@ class GoNN(nn.Module):
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2),
             nn.Flatten(),
-            nn.Linear(100, size**4),
+            nn.Linear(225, size**4),
             nn.Linear(1*size**4, size**2+1)
         )
         self.logits.to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))

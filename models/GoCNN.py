@@ -18,14 +18,11 @@ class GoCNN(nn.Module):
         self.logits = nn.Sequential(
             nn.Conv2d(6, size ** 2, kernel_size=3, padding=2),
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2),
-            #nn.MaxPool2d(kernel_size=2),
             nn.Conv2d(size ** 2, size ** 3, kernel_size=3, padding=2),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2),
             nn.Flatten(),
-            nn.Linear(500, size ** 4),
-            nn.Flatten(),
+            nn.Linear(2000, size ** 4),
             nn.Linear(1 * size ** 4, size ** 2 + 1)
         )
 

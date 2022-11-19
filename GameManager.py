@@ -57,7 +57,7 @@ class GameManager:
         # Extracting all models
         players = []
         print("Henter ut alle spillerne")
-        for i in range(8):
+        for i in range(20):
             model = torch.load(f"models/SavedModels/{i}.pt")
             model.eval()
             # Convert to tree
@@ -67,7 +67,7 @@ class GameManager:
         win_dict = dict()
         # Playing the tournament
         print("Playing turnering")
-        for i in range(1,8):
+        for i in range(1,20):
             print(f"Round {i}")
             numberOfWins = 0
             for j in range(1000):

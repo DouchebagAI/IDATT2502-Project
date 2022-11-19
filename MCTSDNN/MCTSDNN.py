@@ -143,7 +143,7 @@ class MCTSDNN:
         actionFromNode = node.best_child(self.get_type()).action
         state, _, done, _ = env_copy.step(actionFromNode)
         
-        if( self.amountOfSims > 8):
+        if( self.amountOfSims > 3):
             x_tens = torch.tensor(state, dtype=torch.float).to(self.device)
             v = self.value_model.f(x_tens.reshape(-1, 6,self.size, self.size).float()).cpu().detach().item()
             if v > 0.33:
@@ -246,7 +246,7 @@ class MCTSDNN:
         x_train, y_train = self.data_to_tensor(train)
         x_test, y_test = self.data_to_tensor(test)
         print(y_train.shape)
-        batch = 32
+        batch = 8
         x_train_batches = torch.split(x_train, batch)
         #print(len(x_train_batches))
         #print(x_train_batches[0])
@@ -259,7 +259,7 @@ class MCTSDNN:
         # Optimize: adjust W and b to minimize loss using stochastic gradient descent
         optimizer = torch.optim.Adam(model.parameters(), 0.0001)
         
-        for _ in range(1000):
+        for _ in range(200):
             for batch in range(len(x_train_batches)):
                 #print(y_train_batches[batch])
                 model.loss(x_train_batches[batch], y_train_batches[batch]).backward()  # Compute loss gradients
@@ -276,7 +276,7 @@ class MCTSDNN:
         # Optimize: adjust W and b to minimize loss using stochastic gradient descent
         optimizer = torch.optim.Adam(model.parameters(), 0.0001)
         
-        for _ in range(1000):
+        for _ in range(200):
             for batch in range(len(x_train_batches)):
                 #print(model.loss(x_train_batches[batch], y_train_batches[batch]))
                 model.loss(x_train_batches[batch], y_train_batches[batch]).backward()  # Compute loss gradients
