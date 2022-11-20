@@ -69,7 +69,7 @@ class Node:
     def __str__(self):
         return f" v: {self.get_value(Type.BLACK).__round__(2)}, n: {self.n}, N: {self.getN()}, a: {self.action}, parent: {self.parent.action if self.parent != None else 'Root'}"
 
-    # Prints a node, indendet by the depth
+    # Prints a node, indented by the depth
     def print_node(self, depth):
         print(f"{'  '*4*depth}{self}")
         for i in self.children.values():
