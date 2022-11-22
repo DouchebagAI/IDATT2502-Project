@@ -70,7 +70,7 @@ class GameManager:
         for i in range(1,20):
             print(f"Round {i}")
             numberOfWins = 0
-            for j in range(1000):
+            for j in range(100):
                 if(j%2 == 0):
                     winner = self.test(players[0], players[i])
                     if winner == 1:

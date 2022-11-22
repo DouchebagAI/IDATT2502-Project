@@ -1,6 +1,9 @@
 import json
 import warnings
 import uuid
+
+import torch
+
 warnings.filterwarnings("ignore")
 import gym
 import numpy as np
@@ -75,7 +78,7 @@ playerDCNN = MCTSDNN(go_env, size, "Go2", kernel_size=3)
 playerCNN = MCTSDNN(go_env, size, "Go", kernel_size=3)
 #print("Trener andre tre")
 print("Trener MCTS /m CNN")
-gm.play_tournament()
+#gm.play_tournament()
 #print(np.load("models/training_data/value_model.npy", allow_pickle=True))
 m1 = np.load("models/training_data/model_168_3e15f1db-a1a3-4b00-a262-977aecaa85e6.npy", allow_pickle=True)
 m2 = np.load("models/training_data/model_e2c6149d-4745-455a-b5fc-e5383a153079.npy", allow_pickle=True)
@@ -86,7 +89,7 @@ v_m1 = np.load("models/training_data/value_model_2616_35e8d926-b416-444b-8ef8-07
 v_m2 = np.load("models/training_data/value_model_d89f8f41-cd35-4ea3-b936-a15b5b637d35.npy", allow_pickle=True)
 v_t1 = np.load("models/test_data/value_model_683_d01d7120-afdd-46c5-a050-f2fc272c7f40.npy", allow_pickle=True)
 v_m3 = np.concatenate((v_m2,v_m1))
-
+"""
 playerCNN.train_model(playerCNN.model,
                             playerCNN.get_training_data(m3, t1), playerCNN.model_losses, playerCNN.model_accuracy)
 playerDCNN.train_model(playerDCNN.model,
@@ -99,18 +102,19 @@ playerDCNN.train_model_value(playerDCNN.value_model,
                             playerDCNN.get_training_data(v_m3, v_t1), playerDCNN.value_model_losses, playerDCNN.value_model_accuracy)
 #playerDCNN.train_model_value(playerDCNN.value_model,
                        #playerDCNN.get_training_data(v_m3, v_t1), playerDCNN.value_model_accuracy, playerDCNN.value_model_accuracy)
-
+"""
 
 #playerCNN.training_data = m3.tolist()
 #playerDCNN.training_data = m3.tolist()
 #playerDCNN.training_data = m3.tolist()
 
-
-
-
+model = torch.load(f"models/SavedModels/19.pt")
+model.eval()
+playerCNN.model = model
+#gm.play_as_white(playerCNN)
 #playerCNN.train(20)
-#playerDCNN.train(20)
-#player_tree_only.train(20)
+playerDCNN.train(10)
+player_tree_only.train(5)
 
 print("CNN vs Tree")
 play(playerCNN, player_tree_only, 1000)

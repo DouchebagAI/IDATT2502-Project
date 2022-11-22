@@ -73,7 +73,7 @@ class MCTSDNN:
         # Hvis ingen barn, velg en greedy policy
         action : int
         
-        action = self.play_policy_prob(self.env)
+        action = self.play_policy_greedy(self.env)
         
         self.move_count += 1
         return action
@@ -87,7 +87,7 @@ class MCTSDNN:
                 self.current_node.children.update({(move, new_node)})
                 self.node_count += 1
         
-        for i in range(500):
+        for i in range(1000):
             self.simulate(self.current_node)
 
         # Add to current node
@@ -143,7 +143,7 @@ class MCTSDNN:
         actionFromNode = node.best_child(self.get_type()).action
         state, _, done, _ = env_copy.step(actionFromNode)
         
-        if( self.amountOfSims > 3):
+        if( self.amountOfSims > 2 and self.value_model_accuracy[-1] > 0.70):
             x_tens = torch.tensor(state, dtype=torch.float).to(self.device)
             v = self.value_model.f(x_tens.reshape(-1, 6,self.size, self.size).float()).cpu().detach().item()
             if v > 0.33:
@@ -155,7 +155,7 @@ class MCTSDNN:
             
         else:
             while not done:
-                action = self.play_policy_prob(env_copy)
+                action = self.play_policy_greedy(env_copy)
                 state, _, done, _ = env_copy.step(action)
 
 
