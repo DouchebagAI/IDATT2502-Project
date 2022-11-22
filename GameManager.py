@@ -57,8 +57,9 @@ class GameManager:
         # Extracting all models
         players = []
         print("Henter ut alle spillerne")
+        
         for i in range(20):
-            model = torch.load(f"models/SavedModels/{i}.pt")
+            model = torch.load(f"models/SavedModels/{i}.pt", map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
             model.eval()
             # Convert to tree
             tree = MCTSDNN(self.env, 5, "Go2", kernel_size=3)
@@ -83,7 +84,7 @@ class GameManager:
             win_dict= {i: numberOfWins/1000}
             print(f"Player 0 won {numberOfWins} times against player {i}")
         # Plot the results
-        plt.figure()
+        plt.figure(figsize=(8, 6))
         plt.bar(win_dict.keys(), win_dict.values())
         plt.savefig("models/results.png")
         

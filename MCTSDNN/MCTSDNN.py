@@ -102,7 +102,7 @@ class MCTSDNN:
                 self.current_node.children.update({(move, new_node)})
                 self.node_count += 1
 
-        for i in range(500):
+        for i in range(250):
             self.simulate(self.current_node)
 
         # Add to current node
@@ -381,7 +381,7 @@ class MCTSDNN:
         np.save(f"models/test_data/value_model_{len(self.test_win)}_{uuid.uuid4()}.npy", self.test_win,
                 allow_pickle=True)
 
-    def opponent_turn_update(self):
+    def opponent_turn_update(self, action: int):
         self.move_count += 1
         """
         if move in self.current_node.children.keys():
