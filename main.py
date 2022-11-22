@@ -78,7 +78,7 @@ playerDCNN = MCTSDNN(go_env, size, "Go2", kernel_size=3)
 playerCNN = MCTSDNN(go_env, size, "Go", kernel_size=3)
 #print("Trener andre tre")
 print("Trener MCTS /m CNN")
-gm.play_tournament()
+#gm.play_tournament()
 #print(np.load("models/training_data/value_model.npy", allow_pickle=True))
 m1 = np.load("models/training_data/model_168_3e15f1db-a1a3-4b00-a262-977aecaa85e6.npy", allow_pickle=True)
 m2 = np.load("models/training_data/model_e2c6149d-4745-455a-b5fc-e5383a153079.npy", allow_pickle=True)
@@ -108,13 +108,16 @@ playerDCNN.train_model_value(playerDCNN.value_model,
 #playerDCNN.training_data = m3.tolist()
 #playerDCNN.training_data = m3.tolist()
 
-playerCNN.train(3)
-gm.play_tournament()
+playerDCNN.train(3)
+#gm.play_tournament()
+
+
+#gm.testWithAndWithoutTree(playerDCNN, playerCNN, 100)
 
 
 #playerDCNN.train(20)
 #player_tree_only.train(20)
-
+"""
 print("CNN vs Tree")
 play(playerCNN, player_tree_only, 1000)
 print("Tree vs CNN")
@@ -126,8 +129,8 @@ play(player_tree_only, playerDCNN, 1000)
 play(playerDCNN, playerCNN, 1000)
 print("Tree vs CNN")
 play(playerCNN, playerDCNN, 1000)
-
-plot_training(playerCNN, "Model 1", playerCNN.model_losses, playerCNN.model_accuracy)
+"""
+plot_training(playerDCNN, "Double layer CNN", playerDCNN.model_losses, playerDCNN.model_accuracy)
 #plot_training(playerDCNN, "Model DCNN", playerDCNN.model_losses, playerDCNN.model_accuracy)
 plot_training(playerDCNN, "Model 2", playerDCNN.value_model_losses, playerDCNN.value_model_accuracy)
     

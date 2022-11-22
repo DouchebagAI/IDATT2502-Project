@@ -52,6 +52,29 @@ class GameManager:
         #mcts1.backpropagate(mcts1.current_node, self.env.winner())
         #mcts2.backpropagate(mcts2.current_node, self.env.winner())
         return self.env.winner()
+    
+    def testWithAndWithoutTree(self, mcts1:MCTSDNN, mcts2:MCTSDNN):
+        # Same logic as in training, but instead user takes action when whites turn
+        self.env.reset()
+        mcts1.reset()
+        mcts2.reset()
+        done = False
+        while not done:
+            action = mcts1.take_turn()
+            # print(action)
+            _, _, done, _ = self.env.step(action)
+            
+            mcts2.opponent_turn_update(action)
+                        
+            if done:
+                break
+            
+            action = mcts2.take_turn_play()
+            _, _, done, _ = self.env.step(action)
+            mcts1.opponent_turn_update(action)
+        #mcts1.backpropagate(mcts1.current_node, self.env.winner())
+        #mcts2.backpropagate(mcts2.current_node, self.env.winner())
+        return self.env.winner()
 
 
     def play_tournament(self):
@@ -88,6 +111,10 @@ class GameManager:
         print(len(list(win_dict.keys())))
         print(len(list(win_dict.values())))
         plt.figure()
+        plt.title("Tournament : As model 0")
+        plt.xlabel("Model iterations")
+        plt.ylim(0,1000)
+        plt.ylabel("Wins for model 0")
         plt.plot(np.array(list(win_dict.keys())),np.array(list(win_dict.values())))
         plt.show()
 

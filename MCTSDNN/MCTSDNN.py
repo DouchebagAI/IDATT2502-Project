@@ -30,6 +30,7 @@ class MCTSDNN:
     def __init__(self, env: gym.Env, size, model, kernel_size=3):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.size = size
+        self.model_name = model
         if model is "Go":
             self.model = GoNN(self.size, kernel_size=kernel_size).to(self.device)
         if model is "Go2":
@@ -63,13 +64,19 @@ class MCTSDNN:
         :return: action
         """
         action: int
-        if len(self.current_node.children) == 0:
-            # The current node has no child nodes
-            action = self.expand()
-        else:
-            # The current node has child nodes
-            self.current_node = self.current_node.best_child(self.get_type())
-            action = self.current_node.action
+        parent_node = self.current_node
+        for i in range(250):
+            if len(self.current_node.children) == 0:
+                # The current node has no child nodes
+                action = self.expand()
+                # expand
+                # simulate
+                # backpropagate
+            else:
+                # The current node has child nodes
+                self.current_node = self.current_node.best_child(self.get_type())
+                action = self.current_node.action
+            
         self.move_count += 1
         return action
 
@@ -102,21 +109,23 @@ class MCTSDNN:
                 self.current_node.children.update({(move, new_node)})
                 self.node_count += 1
 
-        for i in range(250):
-            self.simulate(self.current_node)
+        
+        self.simulate(self.current_node)
 
         # Add to current node
         if (random.randint(1, 99) <= 20):
             y_t = np.zeros(1)
             y_t[0] = self.current_node.V()
             y = self.get_target(self.current_node)
-            self.test_data.append((self.env.state(), y))
+            if np.sum(y) < 1000:
+                self.test_data.append((self.env.state(), y))
             self.test_win.append((self.env.state(), y_t))
         else:
             y_t = np.zeros(1)
             y_t[0] = self.current_node.V()
             y = self.get_target(self.current_node)
-            self.training_data.append((self.env.state(), y))
+            if np.sum(y) < 1000:
+                self.training_data.append((self.env.state(), y))
             self.training_win.append((self.env.state(), y_t))
 
         # Add to children to current node
@@ -124,23 +133,24 @@ class MCTSDNN:
             env_copy = copy.deepcopy(self.env)
             state, _, _, _ = env_copy.step(i.action)
             y_t = np.zeros(1)
-            y_t[0] = i.V()
+            if not i.n == 0:
+                y_t[0] = i.V()
             if (random.randint(1, 99) <= 20):
                 y = self.get_target(i)
-                if np.sum(y) != 0:
+                if np.sum(y) != 0 and np.sum(y) < 1000:
                     self.test_data.append((state, y))
                 if i.n > 5:
                     self.test_win.append((state, y_t))
             else:
                 y = self.get_target(i)
-                if np.sum(y) != 0:
+                if np.sum(y) != 0 and np.sum(y) < 1000:
                     self.training_data.append((state, y))
                 if i.n > 10:
                     self.training_win.append((state, y_t))
 
         self.current_node = self.current_node.best_child(self.get_type())
-
-        return self.current_node.action
+        
+        return self.current_node.best_child(self.get_type()).action
 
     def get_target(self, node: Node):
         y_t = np.zeros(self.size ** 2 + 1)
@@ -164,12 +174,12 @@ class MCTSDNN:
         actionFromNode = node.best_child(self.get_type()).action
         state, _, done, _ = env_copy.step(actionFromNode)
 
-        if self.amountOfSims > 3:
+        if self.amountOfSims > 9:
             x_tens = torch.tensor(state, dtype=torch.float).to(self.device)
             v = self.value_model.f(x_tens.reshape(-1, 6, self.size, self.size).float()).cpu().detach().item()
-            if v > 0.33:
+            if v > 0.5:
                 self.backpropagate(node.children[actionFromNode], 1)
-            if v < -0.33:
+            if v < -0.5:
                 self.backpropagate(node.children[actionFromNode], -1)
             else:
                 self.backpropagate(node.children[actionFromNode], 0)
@@ -369,7 +379,7 @@ class MCTSDNN:
                              self.model_losses, self.model_accuracy)
             self.train_model_value(self.value_model, self.get_training_data(self.training_win, self.test_win),
                                    self.value_model_losses, self.value_model_accuracy)
-            torch.save(self.model, f"models/SavedModels/{i}.pt")
+            #torch.save(self.model, f"models/SavedModels/{i}_{self.model_name}.pt")
 
             self.R = Node(None, None)
             self.reset()

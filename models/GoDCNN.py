@@ -38,8 +38,14 @@ class GoDCNN(nn.Module):
         return torch.softmax(self.logits(x), dim=1)
 
     # Cross Entropy loss
+    # Categorical (Only a single best move)
     def loss(self, x, y):
         return nn.functional.cross_entropy(self.logits(x),  y.argmax(1))
+
+    # MSE loss
+    # A spread og how good each move is
+    def mse_loss(self, x, y):
+        return nn.functional.mse_loss(self.logits(x), y)
 
     # Accuracy
     def accuracy(self, x, y):
