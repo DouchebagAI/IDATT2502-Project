@@ -8,7 +8,7 @@ import torch.nn as nn
 import copy
 import numpy as np
 import gym
-
+"""
 class GoDCNN(nn.Module):
     def __init__(self, size=3):
         super().__init__()
@@ -35,12 +35,14 @@ class GoDCNN(nn.Module):
         self.logits.to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
 
     def f(self, x):
+
         return torch.softmax(self.logits(x), dim=1)
 
     # Cross Entropy loss
     # Categorical (Only a single best move)
     def loss(self, x, y):
-        return nn.functional.cross_entropy(self.logits(x),  y.argmax(1))
+
+        return nn.functional.cross_entropy(self.f(x),  y.argmax(1))
 
     # MSE loss
     # A spread og how good each move is
@@ -50,3 +52,4 @@ class GoDCNN(nn.Module):
     # Accuracy
     def accuracy(self, x, y):
         return torch.mean(torch.eq(self.f(x).argmax(1), y.argmax(1)).float())
+    """

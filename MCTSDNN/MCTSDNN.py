@@ -65,17 +65,17 @@ class MCTSDNN:
         """
         action: int
         parent_node = self.current_node
-        for i in range(250):
-            if len(self.current_node.children) == 0:
-                # The current node has no child nodes
-                action = self.expand()
-                # expand
-                # simulate
-                # backpropagate
-            else:
-                # The current node has child nodes
-                self.current_node = self.current_node.best_child(self.get_type())
-                action = self.current_node.action
+
+        if len(self.current_node.children) == 0:
+            # The current node has no child nodes
+            action = self.expand()
+            # expand
+            # simulate
+            # backpropagate
+        else:
+            # The current node has child nodes
+            self.current_node = self.current_node.best_child(self.get_type())
+            action = self.current_node.action
             
         self.move_count += 1
         return action
@@ -88,7 +88,7 @@ class MCTSDNN:
         # Hvis ingen barn, velg en greedy policy
         action : int
 
-        action = self.play_policy_greedy(self.env)
+        action = self.play_policy_prob(self.env)
 
         self.move_count += 1
         return action
@@ -109,8 +109,8 @@ class MCTSDNN:
                 self.current_node.children.update({(move, new_node)})
                 self.node_count += 1
 
-        
-        self.simulate(self.current_node)
+        for i in range(250):
+            self.simulate(self.current_node)
 
         # Add to current node
         if (random.randint(1, 99) <= 20):
@@ -150,7 +150,7 @@ class MCTSDNN:
 
         self.current_node = self.current_node.best_child(self.get_type())
         
-        return self.current_node.best_child(self.get_type()).action
+        return self.current_node.action
 
     def get_target(self, node: Node):
         y_t = np.zeros(self.size ** 2 + 1)
@@ -185,7 +185,7 @@ class MCTSDNN:
                 self.backpropagate(node.children[actionFromNode], 0)
         else:
             while not done:
-                action = self.play_policy_greedy(env_copy)
+                action = self.play_policy_prob(env_copy)
                 state, _, done, _ = env_copy.step(action)
 
             self.backpropagate(node.children[actionFromNode], env_copy.winner())
@@ -205,20 +205,15 @@ class MCTSDNN:
         x_tens = torch.tensor(env.state(), dtype=torch.float).to(self.device)
         y = self.model.f(x_tens.reshape(-1, 6, self.size, self.size).float())
 
-        if self.get_type() == Type.BLACK:
-            m = nn.Softmax(dim=1)
-            index = m(np.multiply(y.cpu().detach(), env.valid_moves()))
 
-        else:
-            m = nn.Softmin(dim=1)
-            index = m(np.multiply(y.cpu().detach(), env.valid_moves()))
+        m = nn.Softmax(dim=1)
+        t = [i != 0 for i in y]
+
+        index = np.multiply(m(y.cpu().detach(),env.valid_moves()))
 
         action = self.action_based_on_prob(index[0])
-        valid_moves = env.valid_moves()
 
-        if valid_moves[action] == 0.0:
-            # print("Invalid move")
-            return env.uniform_random_action()
+
 
         return action
 
@@ -230,16 +225,8 @@ class MCTSDNN:
         x_tens = torch.tensor(env.state(), dtype=torch.float).to(self.device)
 
         y = self.model.f(x_tens.reshape(-1, 6, self.size, self.size).float())
-        if self.get_type() == Type.BLACK:
-            index = np.argmax(np.multiply(y.cpu().detach(), env.valid_moves()))
-        else:
-            index = np.argmin(np.multiply(y.cpu().detach(), env.valid_moves()))
+        index = np.argmax(np.multiply(y.cpu().detach(), env.valid_moves()))
 
-        valid_moves = env.valid_moves()
-
-        if valid_moves[index.item()] == 0.0:
-            # print("Invalid move")
-            return env.uniform_random_action()
         # value head
         # input state- lag - splitter i to
         # policy head -> actions
@@ -288,14 +275,15 @@ class MCTSDNN:
         for _ in range(200):
             for batch in range(len(x_train_batches)):
                 # print(y_train_batches[batch])
-                model.loss(x_train_batches[batch], y_train_batches[batch]).backward()  # Compute loss gradients
-                loss_list.append(model.loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
+                model.mse_loss(x_train_batches[batch], y_train_batches[batch]).backward()  # Compute loss gradients
+                #print(model.mse_loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
+                loss_list.append(model.mse_loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
                 optimizer.step()  # Perform optimization by adjusting W and b,
                 optimizer.zero_grad()  # Clear gradients for next step
 
         # print(f"Loss: {self.model.loss(x_test, y_test)}")
-        acc_list.append(model.accuracy(x_test, y_test).cpu().detach())
-        print(f"Accuracy: {model.accuracy(x_test, y_test)}")
+        acc_list.append(model.mse_acc(x_test, y_test).cpu().detach())
+        print(f"Accuracy: {model.mse_acc(x_test, y_test)}")
 
     def train_model_value(self, model, function, loss_list, acc_list):
         x_train_batches, y_train_batches, x_test, y_test = function
@@ -377,21 +365,21 @@ class MCTSDNN:
 
             self.train_model(self.model, self.get_training_data(self.training_data, self.test_data),
                              self.model_losses, self.model_accuracy)
-            self.train_model_value(self.value_model, self.get_training_data(self.training_win, self.test_win),
-                                   self.value_model_losses, self.value_model_accuracy)
+            #self.train_model_value(self.value_model, self.get_training_data(self.training_win, self.test_win),
+                                   #self.value_model_losses, self.value_model_accuracy)
             #torch.save(self.model, f"models/SavedModels/{i}_{self.model_name}.pt")
 
             self.R = Node(None, None)
             self.reset()
 
-        np.save(f"models/training_data/model_{len(self.training_data)}_{uuid.uuid4()}.npy", self.training_data,
-                allow_pickle=True)
+        #np.save(f"models/training_data/model_MY{len(self.training_data)}_{uuid.uuid4()}.npy", self.training_data,
+                #allow_pickle=True)
         np.save(f"models/training_data/value_model_{len(self.training_win)}_{uuid.uuid4()}.npy", self.training_win,
                 allow_pickle=True)
-        np.save(f"models/test_data/model_{len(self.test_data)}_{uuid.uuid4()}.npy", self.test_data,
+        np.save(f"models/test_data/model_MY{len(self.test_data)}_{uuid.uuid4()}.npy", self.test_data,
                 allow_pickle=True)
-        np.save(f"models/test_data/value_model_{len(self.test_win)}_{uuid.uuid4()}.npy", self.test_win,
-                allow_pickle=True)
+        #np.save(f"models/test_data/value_model_{len(self.test_win)}_{uuid.uuid4()}.npy", self.test_win,
+                #allow_pickle=True)
 
     def opponent_turn_update(self, action):
         self.move_count += 1
