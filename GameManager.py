@@ -1,6 +1,7 @@
 from MCTSDNN.MCTSDNN import MCTSDNN
 
 import copy
+import numpy as np
 import torch
 import matplotlib.pyplot as plt
 
@@ -58,7 +59,7 @@ class GameManager:
         players = []
         print("Henter ut alle spillerne")
         for i in range(20):
-            model = torch.load(f"models/SavedModels/{i}.pt")
+            model = torch.load(f"models/SavedModels/{i}.pt", map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
             model.eval()
             # Convert to tree
             tree = MCTSDNN(self.env, 5, "Go2", kernel_size=3)
@@ -70,7 +71,7 @@ class GameManager:
         for i in range(1,20):
             print(f"Round {i}")
             numberOfWins = 0
-            for j in range(100):
+            for j in range(1000):
                 if(j%2 == 0):
                     winner = self.test(players[0], players[i])
                     if winner == 1:
@@ -80,12 +81,15 @@ class GameManager:
                     if winner == -1:
                         numberOfWins += 1
             # Update win dict
-            win_dict= {i: numberOfWins/1000}
+            win_dict.update({i: numberOfWins})
             print(f"Player 0 won {numberOfWins} times against player {i}")
         # Plot the results
+        print(len(list(win_dict.keys())))
+        print(len(list(win_dict.values())))
         plt.figure()
-        plt.bar(win_dict.keys(), win_dict.values())
-        plt.savefig("models/results.png")
+        plt.plot(np.array(list(win_dict.keys())),np.array(list(win_dict.values())))
+        plt.show()
+
         
     def print_winner(self):
             if self.env.winner() == 1:
