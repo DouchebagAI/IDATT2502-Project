@@ -205,14 +205,9 @@ class MCTSDNN:
         x_tens = torch.tensor(env.state(), dtype=torch.float).to(self.device)
         y = self.model.f(x_tens.reshape(-1, 6, self.size, self.size).float())
 
-        if self.get_type() == Type.BLACK:
-            m = nn.Softmax(dim=1)
-            index = m(np.multiply(y.cpu().detach(), env.valid_moves()))
-
-        else:
-            m = nn.Softmin(dim=1)
-            index = m(np.multiply(y.cpu().detach(), env.valid_moves()))
-
+        m = nn.Softmax(dim=1)
+        index = m(np.multiply(y.cpu().detach(), env.valid_moves()))
+    
         action = self.action_based_on_prob(index[0])
         valid_moves = env.valid_moves()
 
@@ -230,16 +225,8 @@ class MCTSDNN:
         x_tens = torch.tensor(env.state(), dtype=torch.float).to(self.device)
 
         y = self.model.f(x_tens.reshape(-1, 6, self.size, self.size).float())
-        if self.get_type() == Type.BLACK:
-            index = np.argmax(np.multiply(y.cpu().detach(), env.valid_moves()))
-        else:
-            index = np.argmin(np.multiply(y.cpu().detach(), env.valid_moves()))
+        index = np.argmax(np.multiply(y.cpu().detach(), env.valid_moves()))
 
-        valid_moves = env.valid_moves()
-
-        if valid_moves[index.item()] == 0.0:
-            # print("Invalid move")
-            return env.uniform_random_action()
         # value head
         # input state- lag - splitter i to
         # policy head -> actions
@@ -364,17 +351,21 @@ class MCTSDNN:
             rounds = 0
             while not done and rounds < 80:
                 # Gjør et trekk
-                action = self.take_turn()
+                action = self.take_turn_2()
                 _, _, done, _ = self.env.step(action)
-                print(rounds)
+                print("Round ", rounds)
                 rounds += 1
 
-                # self.env.render("terminal")
+                self.env.render("terminal")
 
-            self.backpropagate(self.current_node, self.env.winner())
+            #self.backpropagate(self.current_node, self.env.winner())
             self.amountOfSims += 1
-            print("Training network")
 
+            # Iterate the fucking tree
+            print("Storing data")
+            self.iterate_MCTS(self.R)
+            
+            print("Training network")
             self.train_model(self.model, self.get_training_data(self.training_data, self.test_data),
                              self.model_losses, self.model_accuracy)
             self.train_model_value(self.value_model, self.get_training_data(self.training_win, self.test_win),
@@ -384,14 +375,14 @@ class MCTSDNN:
             self.R = Node(None, None)
             self.reset()
 
-        np.save(f"models/training_data/model_{len(self.training_data)}_{uuid.uuid4()}.npy", self.training_data,
-                allow_pickle=True)
-        np.save(f"models/training_data/value_model_{len(self.training_win)}_{uuid.uuid4()}.npy", self.training_win,
-                allow_pickle=True)
-        np.save(f"models/test_data/model_{len(self.test_data)}_{uuid.uuid4()}.npy", self.test_data,
-                allow_pickle=True)
-        np.save(f"models/test_data/value_model_{len(self.test_win)}_{uuid.uuid4()}.npy", self.test_win,
-                allow_pickle=True)
+        #np.save(f"models/training_data/model_{len(self.training_data)}_{uuid.uuid4()}.npy", self.training_data,
+                #allow_pickle=True)
+        #np.save(f"models/training_data/value_model_{len(self.training_win)}_{uuid.uuid4()}.npy", self.training_win,
+                #allow_pickle=True)
+        #np.save(f"models/test_data/model_{len(self.test_data)}_{uuid.uuid4()}.npy", self.test_data,
+                #allow_pickle=True)
+        #np.save(f"models/test_data/value_model_{len(self.test_win)}_{uuid.uuid4()}.npy", self.test_win,
+                #allow_pickle=True)
 
     def opponent_turn_update(self, action):
         self.move_count += 1
@@ -413,3 +404,123 @@ class MCTSDNN:
         This is a function for printing and visualizing the MCTS
         """
         self.R.print_tree()
+
+    def expand_2(self, env_copy):
+         # Create all valid children nodes
+        valid_moves = env_copy.valid_moves()
+        for move in range(len(valid_moves)):
+            if move not in self.current_node.children.keys() and valid_moves[move] == 1.0:
+                new_node = Node(self.current_node, move)
+                self.current_node.children.update({(move, new_node)})
+                self.node_count += 1
+        #Returns one of the children, it doesn't matter which one because none has been visited
+        return self.current_node.children[random.choice(list(self.current_node.children.keys()))]
+        
+    def simulate_2(self, env_copy):
+        # Need to create an environment from self.current_node
+
+        if self.amountOfSims > 9:
+            x_tens = torch.tensor(state, dtype=torch.float).to(self.device)
+            v = self.value_model.f(x_tens.reshape(-1, 6, self.size, self.size).float()).cpu().detach().item()
+            if v > 0.5:
+                return 1
+            if v < -0.5:
+                return -1
+            else:
+                return 0
+        else:
+            done = False
+            while not done:
+                action = self.play_policy_greedy(env_copy)
+                state, _, done, _ = env_copy.step(action)
+            v = env_copy.winner()
+            return v
+
+    def take_turn_2(self):
+        root = self.current_node
+        # Create a MCTS from this current state with 500 iterations
+        for i in range(500):
+            env_copy = copy.deepcopy(self.env)
+            print("iteration", i)
+            done = False
+            # Tree Policy / Traverse until leaf-node IT IS FUKIN STUCK
+            if()
+            print("Noden har barn: ",len(self.current_node.children))
+            while(len(self.current_node.children) != 0 and not done):
+                self.current_node = self.current_node.best_child(self.get_type())
+                print("Noden har barn: ",len(self.current_node.children))
+                state, _, done, _ = env_copy.step(self.current_node.action)
+            
+            # Expand
+            if not done: 
+                self.current_node = self.expand_2(env_copy)
+                state, _, done, _ = env_copy.step(self.current_node.action)
+            
+            # Simulate / Rollout
+            if not done:    
+                result = self.simulate_2(env_copy)
+
+            # Backprop / Traverse back and update each node.
+            self.backpropagate(self.current_node, result)
+            
+            # Set current node to root
+            self.current_node = root
+       
+        # From root find the best action
+        self.current_node = self.current_node.best_child(self.get_type())
+        return self.current_node.action
+
+    def save_data(self):
+        # Creating test data and training data for the current node
+        if (random.randint(1, 99) <= 20):
+            y_t = np.zeros(1)
+            y_t[0] = self.current_node.V()
+            y = self.get_target(self.current_node)
+            if np.sum(y) < 1000:
+                self.test_data.append((self.env.state(), y))
+            self.test_win.append((self.env.state(), y_t))
+        else:
+            y_t = np.zeros(1)
+            y_t[0] = self.current_node.V()
+            y = self.get_target(self.current_node)
+            if np.sum(y) < 1000:
+                self.training_data.append((self.env.state(), y))
+            self.training_win.append((self.env.state(), y_t))
+
+        """
+        
+        # Add to children to current node
+        for i in self.current_node.children.values():
+            env_copy = copy.deepcopy(self.env)
+            state, _, _, _ = env_copy.step(i.action)
+            y_t = np.zeros(1)
+            if not i.n == 0:
+                y_t[0] = i.V()
+            if (random.randint(1, 99) <= 20):
+                y = self.get_target(i)
+                if np.sum(y) != 0 and np.sum(y) < 1000:
+                    self.test_data.append((state, y))
+                if i.n > 5:
+                    self.test_win.append((state, y_t))
+            else:
+                y = self.get_target(i)
+                if np.sum(y) != 0 and np.sum(y) < 1000:
+                    self.training_data.append((state, y))
+                if i.n > 10:
+                    self.training_win.append((state, y_t))
+        """
+    
+
+    def iterate_MCTS(self, node):
+        
+        # save the data
+        self.current_node = node
+        self.save_data()
+        
+        if(len(node.children) == 0):
+            return 
+        
+        for child in node.children.values():
+            self.iterate_MCTS(child)
+            
+            
