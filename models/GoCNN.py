@@ -31,6 +31,9 @@ class GoCNN(nn.Module):
     def f(self, x):
         return torch.softmax(self.logits(x), dim=1)
 
+    def f_2(self, x):
+        return self.logits(x)
+
     # Cross Entropy loss
     # A single greatest move
     def loss(self, x, y):

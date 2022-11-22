@@ -96,32 +96,17 @@ v_m3 = np.concatenate((v_m2, v_m1))
 #playerCNN.train_model(playerCNN.model,
                       #playerCNN.get_training_data(m3, t1), playerCNN.model_losses, playerCNN.model_accuracy)
 #playerDCNN.train(4)
-playerDCNN.train_model(playerDCNN.model,
-                       playerDCNN.get_training_data(m3, t1), playerDCNN.model_accuracy, playerDCNN.model_accuracy)
+#playerDCNN.train_model(playerDCNN.model,
+                       #playerDCNN.get_training_data(m3, t1), playerDCNN.model_accuracy, playerDCNN.model_accuracy)
 
-playerDCNN.train(3)
+#playerDCNN.train_model_value(playerDCNN.value_model,
+ #playerDCNN.get_training_data(v_m3, v_t1), playerDCNN.value_model_accuracy, playerDCNN.value_model_accuracy)
+
+playerDCNN.train(7)
+gm.play_as_white(playerDCNN)
 plot_training(playerDCNN, "Model DCNN", playerDCNN.model_losses, playerDCNN.model_accuracy)
-print(t1[0])
 
-x_tens = torch.tensor(t1[0][0], dtype=torch.float).to("cuda")
-a = [1-i for i in t1[0][0][3]]
-a = np.array(a).reshape(-1, 25)
-print(a.shape)
-a = np.append(a, 1)
-print(a.shape)
-y = playerDCNN.model.f(x_tens.reshape(-1, 6, 5, 5).float()).cpu().detach()
-y = np.multiply(y, a)
-#print(t1[1])
-#print(t1[2])
-#print(t1[3])
-#print(t1[4])
-#print(torch.softmax(torch.tensor(t1[0][1], dtype=torch.float), dim=1))
 
-print(y)
-print(t1[0][1])
-
-print(np.argmax(y))
-print(np.argmax(np.abs(t1[0][1])))
 
 """
 playerCNN.train_model_value(playerCNN.value_model,
@@ -130,8 +115,8 @@ playerDCNN.train_model_value(playerDCNN.value_model,
                             playerDCNN.get_training_data(v_m3, v_t1), playerDCNN.value_model_losses, playerDCNN.value_model_accuracy)
 """
 
-# playerDCNN.train_model_value(playerDCNN.value_model,
-# playerDCNN.get_training_data(v_m3, v_t1), playerDCNN.value_model_accuracy, playerDCNN.value_model_accuracy)
+playerDCNN.train_model_value(playerDCNN.value_model,
+ playerDCNN.get_training_data(v_m3, v_t1), playerDCNN.value_model_accuracy, playerDCNN.value_model_accuracy)
 
 
 # playerCNN.training_data = m3.tolist()
@@ -140,7 +125,7 @@ playerDCNN.train_model_value(playerDCNN.value_model,
 
 
 #plot_training(playerCNN, "Model 1", playerCNN.model_losses, playerCNN.model_accuracy)
-# plot_training(playerDCNN, "Model DCNN", playerDCNN.model_losses, playerDCNN.model_accuracy)
+#plot_training(playerDCNN, "Model DCNN", playerDCNN.model_losses, playerDCNN.model_accuracy)
 #plot_training(playerDCNN, "Model 2", playerDCNN.value_model_losses, playerDCNN.value_model_accuracy)
 
 

@@ -42,5 +42,7 @@ class GoCNNValue(nn.Module):
 
     # Accuracy
     def accuracy(self, x, y):
-        #return torch.mean(torch.eq(torch.round(self.f(x).argmax(1)), torch.round(y)).float())
-        return torch.mean(1-torch.abs(torch.sub(self.f(x).argmax(1), y)))
+
+        return torch.mean(torch.eq(torch.round(self.f(x).argmax(1).float())
+                                        , torch.round(y).float()).float())
+        #return torch.mean(1-torch.abs(torch.sub(self.f(x).argmax(1), y)))

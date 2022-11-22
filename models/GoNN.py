@@ -31,21 +31,23 @@ class GoNN(nn.Module):
     def f(self, x):
         return torch.softmax(self.logits(x), dim=1)
 
+    def f_2(self, x):
+        return self.logits(x)
+
     # Cross Entropy loss
     # A single greatest move
     def loss(self, x, y):
-        return nn.functional.cross_entropy(self.logits(x), torch.abs(y).argmax(1))
+        return nn.functional.cross_entropy(self.logits(x),  torch.abs(y).argmax(1))
 
     # MSE loss
     # A spread og how good each move is
     def mse_loss(self, x, y):
         return nn.functional.mse_loss(self.logits(x), torch.abs(y))
 
+
     def mse_acc(self, x, y):
-        print(torch.tensor([True if i in torch.topk(torch.abs(y), 3).indices else False for i in
-                            torch.topk(self.f(x), 3).indices]))
-        return torch.mean(torch.tensor([True if i in torch.topk(torch.abs(y), 3).indices else False for i in
-                                        torch.topk(self.f(x), 3).indices]).float())
+        #print(torch.tensor([True if i in torch.topk(torch.abs(y), 3).indices else False for i in torch.topk(self.f(x), 3).indices]))
+        return torch.mean(torch.tensor([True if i in torch.topk(torch.abs(y), 3).indices else False for i in torch.topk(self.f(x), 3).indices]).float())
 
     # Accuracy
     def accuracy(self, x, y):
