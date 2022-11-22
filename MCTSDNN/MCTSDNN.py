@@ -79,9 +79,9 @@ class MCTSDNN:
         :return: action
         """
         # Hvis ingen barn, velg en greedy policy
-        action: int
+        action : int
 
-        action = self.play_policy_prob(self.env)
+        action = self.play_policy_greedy(self.env)
 
         self.move_count += 1
         return action
@@ -175,7 +175,7 @@ class MCTSDNN:
                 self.backpropagate(node.children[actionFromNode], 0)
         else:
             while not done:
-                action = self.play_policy_prob(env_copy)
+                action = self.play_policy_greedy(env_copy)
                 state, _, done, _ = env_copy.step(action)
 
             self.backpropagate(node.children[actionFromNode], env_copy.winner())
@@ -282,8 +282,9 @@ class MCTSDNN:
                 loss_list.append(model.loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
                 optimizer.step()  # Perform optimization by adjusting W and b,
                 optimizer.zero_grad()  # Clear gradients for next step
-            acc_list.append(model.accuracy(x_test, y_test).cpu().detach())
+
         # print(f"Loss: {self.model.loss(x_test, y_test)}")
+        acc_list.append(model.accuracy(x_test, y_test).cpu().detach())
         print(f"Accuracy: {model.accuracy(x_test, y_test)}")
 
     def train_model_value(self, model, function, loss_list, acc_list):
@@ -298,8 +299,9 @@ class MCTSDNN:
                 loss_list.append(model.loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
                 optimizer.step()  # Perform optimization by adjusting W and b,
                 optimizer.zero_grad()  # Clear gradients for next step
-            acc_list.append(model.accuracy(x_test, y_test).cpu().detach())
+
         # print(f"Loss: {self.model.loss(x_test, y_test)}")
+        acc_list.append(model.accuracy(x_test, y_test).cpu().detach())
         print(f"Accuracy: {model.accuracy(x_test, y_test)}")
 
     def get_accuracy(self):
@@ -381,7 +383,7 @@ class MCTSDNN:
         np.save(f"models/test_data/value_model_{len(self.test_win)}_{uuid.uuid4()}.npy", self.test_win,
                 allow_pickle=True)
 
-    def opponent_turn_update(self, action: int):
+    def opponent_turn_update(self, action):
         self.move_count += 1
         """
         if move in self.current_node.children.keys():

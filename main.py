@@ -1,6 +1,9 @@
 import json
 import warnings
 import uuid
+
+import torch
+
 warnings.filterwarnings("ignore")
 import gym
 import numpy as np
@@ -75,7 +78,7 @@ playerDCNN = MCTSDNN(go_env, size, "Go2", kernel_size=3)
 playerCNN = MCTSDNN(go_env, size, "Go", kernel_size=3)
 #print("Trener andre tre")
 print("Trener MCTS /m CNN")
-
+gm.play_tournament()
 #print(np.load("models/training_data/value_model.npy", allow_pickle=True))
 m1 = np.load("models/training_data/model_168_3e15f1db-a1a3-4b00-a262-977aecaa85e6.npy", allow_pickle=True)
 m2 = np.load("models/training_data/model_e2c6149d-4745-455a-b5fc-e5383a153079.npy", allow_pickle=True)

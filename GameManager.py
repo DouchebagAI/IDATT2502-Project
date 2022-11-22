@@ -1,6 +1,7 @@
 from MCTSDNN.MCTSDNN import MCTSDNN
 
 import copy
+import numpy as np
 import torch
 import matplotlib.pyplot as plt
 
@@ -57,7 +58,7 @@ class GameManager:
         # Extracting all models
         players = []
         print("Henter ut alle spillerne")
-        
+
         for i in range(20):
             model = torch.load(f"models/SavedModels/{i}.pt", map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
             model.eval()
@@ -81,12 +82,15 @@ class GameManager:
                     if winner == -1:
                         numberOfWins += 1
             # Update win dict
-            win_dict= {i: numberOfWins/1000}
+            win_dict.update({i: numberOfWins})
             print(f"Player 0 won {numberOfWins} times against player {i}")
         # Plot the results
-        plt.figure(figsize=(8, 6))
-        plt.bar(win_dict.keys(), win_dict.values())
-        plt.savefig("models/results.png")
+        print(len(list(win_dict.keys())))
+        print(len(list(win_dict.values())))
+        plt.figure()
+        plt.plot(np.array(list(win_dict.keys())),np.array(list(win_dict.values())))
+        plt.show()
+
         
     def print_winner(self):
             if self.env.winner() == 1:
