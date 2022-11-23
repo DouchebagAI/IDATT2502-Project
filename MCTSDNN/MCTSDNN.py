@@ -536,7 +536,7 @@ class MCTSDNN:
                 y_t[0] = self.current_node.V()
                 self.test_win.append((self.env.state(), y_t))
             y = self.get_target(self.current_node)
-            if np.sum(y) < 1000 and np.sum(y) != 0:
+            if np.sum(y) < 1000 and np.sum(y) != 0 and self.current_node.n > 10:
                 self.test_data.append((self.env.state(), y))
 
         else:
@@ -546,7 +546,7 @@ class MCTSDNN:
                 self.training_win.append((self.env.state(), y_t))
             y = self.get_target(self.current_node)
 
-            if np.sum(y) < 1000 and np.sum(y) != 0:
+            if np.sum(y) < 1000 and np.sum(y) != 0 and self.current_node.n > 10:
                 self.training_data.append((self.env.state(), y))
 
 
