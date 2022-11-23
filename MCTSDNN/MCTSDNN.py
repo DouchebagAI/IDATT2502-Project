@@ -301,14 +301,12 @@ class MCTSDNN:
                 else:
                     model.loss(x_train_batches[batch], y_train_batches[batch]).backward()
                     loss_list.append(model.loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
-                print(model.mse_loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
+
+                #print(model.mse_loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
                 
                 optimizer.step()  # Perform optimization by adjusting W and b,
                 optimizer.zero_grad()  # Clear gradients for next step
-        if mse_loss:
-            print(f"Loss: {self.model.mse_loss(x_test, y_test)}")
-        else:
-            print(f"Loss: {self.model.loss(x_test, y_test)}")
+
         acc_list.append(model.mse_acc(x_test, y_test).cpu().detach())
         print(f"Accuracy: {model.mse_acc(x_test, y_test)}")
 
@@ -396,7 +394,7 @@ class MCTSDNN:
 
             print("Training network")
             #(self.training_data)
-            print(self.training_data)
+            #print(self.training_data)
             self.train_model(self.model, self.get_training_data(self.training_data, self.test_data),
                              self.model_losses, self.model_accuracy, mse_loss)
                              
@@ -502,7 +500,7 @@ class MCTSDNN:
         """
         root = self.current_node
         # Create a MCTS from this current state with 500 iterations
-        for i in range(100):
+        for i in range(500):
             env_copy = copy.deepcopy(self.env)
             #print("iteration", i)
             done = False

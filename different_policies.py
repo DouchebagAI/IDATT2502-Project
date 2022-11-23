@@ -34,10 +34,43 @@ def plot_training(mcts: MCTSDNN, title, loss, acc):
 model_prob_pol = MCTSDNN(go_env, size, "Go2", kernel_size=3, prob_policy=True)
 model_greedy_pol = MCTSDNN(go_env, size, "Go2", kernel_size=3, prob_policy=False)
 
-model_cross_entropy_loss.train(5)
-model_mse_loss.train(5)
+#model_prob_pol.train(5)
+#model_greedy_pol.train(5)
+prob = 0
+greedy = 0
+tie = 0
+for i in range(100):
+    # Same logic as in training, but instead user takes action when whites turn
+    go_env.reset()
+    model_prob_pol.reset()
+    model_greedy_pol.reset()
+    done = False
+    while not done:
+        action = model_prob_pol.take_turn_2()
+        # print(action)
+        _, _, done, _ = go_env.step(action)
 
-plot_training(model_cross_entropy_loss, "Cross Entropy Loss", model_cross_entropy_loss.model_losses, model_cross_entropy_loss.model_accuracy)
+        model_greedy_pol.opponent_turn_update(action)
 
-plot_training(model_mse_loss, "MSE Loss", model_mse_loss.model_losses, model_mse_loss.model_accuracy)
-#plot_training(playerCNN, "Model 1", playerCNN.model_losses, playerCNN.model_accuracy)
+        if done:
+            break
+
+        action = model_greedy_pol.take_turn_2()
+        _, _, done, _ = go_env.step(action)
+        model_prob_pol.opponent_turn_update(action)
+
+
+    model_prob_pol.backpropagate(model_prob_pol.current_node, go_env.winner())
+    model_greedy_pol.backpropagate(model_greedy_pol.current_node, go_env.winner())
+
+    if(go_env.winner() == 1):
+        prob += 1
+    elif(go_env.winner() == -1):
+        greedy += 1
+    else:
+        tie += 1
+    go_env.reset()
+    model_prob_pol.reset()
+    model_greedy_pol.reset()
+
+print(f"Score is Prob: {prob}(white), Greedy: {greedy}(black), Tie: {tie}")
