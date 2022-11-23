@@ -63,9 +63,9 @@ def play(black_p, white_p, n=100):
     """
 
 
-# go_env.reset()
-# state, reward, done, info = go_env.step(9)
-# print(state[2][0])
+go_env.reset()
+state, reward, done, info = go_env.step(9)
+print(int(state[2][0][0]))
 # print(reward)
 # print(info)
 player_tree_only = MCTSTREE(go_env)
@@ -96,11 +96,11 @@ v_m3 = np.concatenate((v_m2, v_m1))
 #playerCNN.train_model(playerCNN.model,
                       #playerCNN.get_training_data(m3, t1), playerCNN.model_losses, playerCNN.model_accuracy)
 #playerDCNN.train(4)
-#playerDCNN.train_model(playerDCNN.model,
-                       #playerDCNN.get_training_data(m3, t1), playerDCNN.model_accuracy, playerDCNN.model_accuracy)
+playerDCNN.train_model(playerDCNN.model,
+                       playerDCNN.get_training_data(m3, t1), playerDCNN.model_losses, playerDCNN.model_accuracy)
 
-#playerDCNN.train_model_value(playerDCNN.value_model,
- #playerDCNN.get_training_data(v_m3, v_t1), playerDCNN.value_model_accuracy, playerDCNN.value_model_accuracy)
+playerDCNN.train_model_value(playerDCNN.value_model,
+ playerDCNN.get_training_data(v_m3, v_t1), playerDCNN.value_model_losses, playerDCNN.value_model_accuracy)
 
 playerDCNN.train(7)
 gm.play_as_white(playerDCNN)

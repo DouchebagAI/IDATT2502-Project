@@ -41,6 +41,7 @@ class MCTSDNN:
         self.move_count = 0
         self.env = env
         self.R = Node(None, None)
+        self.R.state = self.env.state()
         self.current_node = self.R
         self.node_count = 0
         self.trainingRoundsCompleted = 0
@@ -300,7 +301,7 @@ class MCTSDNN:
                 else:
                     model.loss(x_train_batches[batch], y_train_batches[batch]).backward()
                     loss_list.append(model.loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
-                #print(model.mse_loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
+                print(model.mse_loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
                 
                 optimizer.step()  # Perform optimization by adjusting W and b,
                 optimizer.zero_grad()  # Clear gradients for next step
@@ -395,7 +396,7 @@ class MCTSDNN:
 
             print("Training network")
             #(self.training_data)
-            
+            print(self.training_data)
             self.train_model(self.model, self.get_training_data(self.training_data, self.test_data),
                              self.model_losses, self.model_accuracy, mse_loss)
                              
@@ -403,7 +404,7 @@ class MCTSDNN:
                             self.value_model_losses, self.value_model_accuracy)
 
             torch.save(self.model, f"models/SavedModels/{i}_Gen2_{self.model_name}.pt")
-
+            self.env.reset()
             self.R = Node(None, None)
             self.reset()
 
@@ -430,6 +431,7 @@ class MCTSDNN:
     def reset(self):
         self.move_count = 0
         self.current_node = self.R
+        self.R.state = self.env.state()
 
     def print_tree(self):
         """
@@ -446,6 +448,7 @@ class MCTSDNN:
             if move not in self.current_node.children.keys() and valid_moves[move] == 1.0:
                 new_node = Node(self.current_node, move)
                 self.current_node.children.update({(move, new_node)})
+                new_node.state = env_copy.gogame.next_state(env_copy.state(), move)
                 self.node_count += 1
         #Returns one of the children, it doesn't matter which one because none has been visited
         return self.current_node.children[random.choice(list(self.current_node.children.keys()))]
@@ -499,7 +502,7 @@ class MCTSDNN:
         """
         root = self.current_node
         # Create a MCTS from this current state with 500 iterations
-        for i in range(500):
+        for i in range(100):
             env_copy = copy.deepcopy(self.env)
             #print("iteration", i)
             done = False
@@ -532,25 +535,27 @@ class MCTSDNN:
         return self.current_node.action
 
     def save_data(self):
+
+        self.move_count = int(self.current_node.state[2][0][0])
         # Creating test data and training data for the current node
         if (random.randint(1, 99) <= 20):
             y_t = np.zeros(1)
             if self.current_node.n > 10:
                 y_t[0] = self.current_node.V()
-                self.test_win.append((self.env.state(), y_t))
+                self.test_win.append((self.current_node.state, y_t))
             y = self.get_target(self.current_node)
             if np.sum(y) < 1000 and np.sum(y) != 0 and self.current_node.n >= 30:
-                self.test_data.append((self.env.state(), y))
+                self.test_data.append((self.current_node.state, y))
 
         else:
             y_t = np.zeros(1)
             if self.current_node.n > 10:
                 y_t[0] = self.current_node.V()
-                self.training_win.append((self.env.state(), y_t))
+                self.training_win.append((self.current_node.state, y_t))
             y = self.get_target(self.current_node)
 
             if np.sum(y) < 1000 and np.sum(y) != 0 and self.current_node.n >= 30:
-                self.training_data.append((self.env.state(), y))
+                self.training_data.append((self.current_node.state, y))
 
 
         """
