@@ -436,6 +436,8 @@ class MCTSDNN:
         self.R.print_tree()
 
     def expand_2(self, env_copy):
+        """
+        """
          # Create all valid children nodes
         valid_moves = env_copy.valid_moves()
         for move in range(len(valid_moves)):
@@ -448,7 +450,9 @@ class MCTSDNN:
 
     def simulate_2(self, env_copy):
         """
-        
+        This is a function for simulating a game and return the result.
+        If the value mode does not have enough data it will play to terminal state.
+        If the value model is good enough it will use the model to predict the winner of the game.
         
         :return: value of the result (win: 1, loss: -1, tie: 0)
         """
@@ -483,7 +487,7 @@ class MCTSDNN:
         """
         This is a function for picking the best move given a state.
         It will create MCTS tree with 500 iterations, and at the end from the root choose the child with the highest value.
-        1.Starting with traversing the Monte Carlo Search Tree to a leaf node, allwaye picking the best child.
+        1.Tree policy: Traversing the Monte Carlo Search Tree to a leaf node, allwaye picking the best child.
         2.Expand the leaf node with all valid children nodes possible, and pick one of them random.
         3.Simulate from the chosen node one time
         4.Backpropogate the result from the simulation all the way back to the root
@@ -528,11 +532,11 @@ class MCTSDNN:
         # Creating test data and training data for the current node
         if (random.randint(1, 99) <= 20):
             y_t = np.zeros(1)
-            if self.current_node.n != 0:
+            if self.current_node.n > 10:
                 y_t[0] = self.current_node.V()
                 self.test_win.append((self.env.state(), y_t))
             y = self.get_target(self.current_node)
-            if np.sum(y) < 1000:
+            if np.sum(y) < 1000 and np.sum(y) != 0:
                 self.test_data.append((self.env.state(), y))
 
         else:

@@ -31,11 +31,11 @@ def plot_training(mcts: MCTSDNN, title, loss, acc):
     plt.show()
     # plt.savefig(f"graphs/{uuid.uuid4()}.png")
 
-model_cross_entropy_loss = MCTSDNN(go_env, size, "Go2", kernel_size=3)
-model_mse_loss = MCTSDNN(go_env, size, "Go2", kernel_size=3)
+model_prob_pol = MCTSDNN(go_env, size, "Go2", kernel_size=3, prob_policy=True)
+model_greedy_pol = MCTSDNN(go_env, size, "Go2", kernel_size=3, prob_policy=False)
 
-model_cross_entropy_loss.train(5, mse_loss=False)
-model_mse_loss.train(5, mse_loss=True)
+model_cross_entropy_loss.train(5)
+model_mse_loss.train(5)
 
 plot_training(model_cross_entropy_loss, "Cross Entropy Loss", model_cross_entropy_loss.model_losses, model_cross_entropy_loss.model_accuracy)
 
