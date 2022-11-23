@@ -32,9 +32,9 @@ class MCTSDNN:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.size = size
         self.model_name = model
-        if model is "Go":
+        if model == "Go":
             self.model = GoNN(self.size, kernel_size=kernel_size).to(self.device)
-        if model is "Go2":
+        if model == "Go2":
             self.model = GoCNN(self.size).to(self.device)
 
         self.value_model = GoCNNValue(self.size, 5).to(self.device)
@@ -267,9 +267,9 @@ class MCTSDNN:
             x_train.append(tup[0])
             y_train.append(tup[1])
 
-        x_tens = torch.tensor(x_train, dtype=torch.float).reshape(-1, 6, self.size, self.size).float().to(self.device)
+        x_tens = torch.tensor(np.array(x_train), dtype=torch.float).reshape(-1, 6, self.size, self.size).float().to(self.device)
 
-        y_tens = torch.tensor(y_train, dtype=torch.float).float().to(self.device)
+        y_tens = torch.tensor(np.array(y_train), dtype=torch.float).float().to(self.device)
 
         return x_tens, y_tens
 
@@ -291,12 +291,12 @@ class MCTSDNN:
         # Optimize: adjust W and b to minimize loss using stochastic gradient descent
         optimizer = torch.optim.Adam(model.parameters(), 0.0001)
 
-        for _ in range(200):
+        for _ in range(1000):
             for batch in range(len(x_train_batches)):
-                # print(y_train_batches[batch])
+
                 if mse_loss:
                     model.mse_loss(x_train_batches[batch], y_train_batches[batch]).backward()  # Compute loss gradients
-                    loss_list.append(model.mse_loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
+
                 else:
                     model.loss(x_train_batches[batch], y_train_batches[batch]).backward()
                     loss_list.append(model.loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
@@ -304,8 +304,10 @@ class MCTSDNN:
                 
                 optimizer.step()  # Perform optimization by adjusting W and b,
                 optimizer.zero_grad()  # Clear gradients for next step
-
-        # print(f"Loss: {self.model.loss(x_test, y_test)}")
+        if mse_loss:
+            print(f"Loss: {self.model.mse_loss(x_test, y_test)}")
+        else:
+            print(f"Loss: {self.model.loss(x_test, y_test)}")
         acc_list.append(model.mse_acc(x_test, y_test).cpu().detach())
         print(f"Accuracy: {model.mse_acc(x_test, y_test)}")
 
@@ -459,7 +461,8 @@ class MCTSDNN:
     
         # Need to create an environment from self.current_node
 
-        if self.amountOfSims > 9:
+        if self.amountOfSims > 2 or (len(self.value_model_accuracy) != 0 and
+                self.value_model_accuracy[-1] > 0.7):
             x_tens = torch.tensor(env_copy.state(), dtype=torch.float).to(self.device)
             v = self.value_model.f(x_tens.reshape(-1, 6, self.size, self.size).float()).cpu().detach().item()
             if v > 0.5:
@@ -536,7 +539,7 @@ class MCTSDNN:
                 y_t[0] = self.current_node.V()
                 self.test_win.append((self.env.state(), y_t))
             y = self.get_target(self.current_node)
-            if np.sum(y) < 1000 and np.sum(y) != 0 and self.current_node.n > 10:
+            if np.sum(y) < 1000 and np.sum(y) != 0 and self.current_node.n >= 30:
                 self.test_data.append((self.env.state(), y))
 
         else:
@@ -546,7 +549,7 @@ class MCTSDNN:
                 self.training_win.append((self.env.state(), y_t))
             y = self.get_target(self.current_node)
 
-            if np.sum(y) < 1000 and np.sum(y) != 0 and self.current_node.n > 10:
+            if np.sum(y) < 1000 and np.sum(y) != 0 and self.current_node.n >= 30:
                 self.training_data.append((self.env.state(), y))
 
 

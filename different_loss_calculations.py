@@ -23,7 +23,7 @@ def plot_training(mcts: MCTSDNN, title, loss, acc):
     # plt.savefig(f"graphs/{uuid.uuid4()}.png")
 
     plt.figure()
-    plt.ylim(100)
+    plt.ylim(0,100)
     plt.plot(accuracy, label="Accuracy", color="Green")
     plt.xlabel('Iterations')
     plt.ylabel('Accuracy')
