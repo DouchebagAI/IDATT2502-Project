@@ -43,7 +43,7 @@ class MCTSDNN:
         self.R = Node(None, None)
         self.current_node = self.R
         self.node_count = 0
-        self.amountOfSims = 0
+        self.trainingRoundsCompleted = 0
 
         self.training_win = []
         self.test_win = []
@@ -177,7 +177,7 @@ class MCTSDNN:
         actionFromNode = node.best_child(self.get_type()).action
         state, _, done, _ = env_copy.step(actionFromNode)
 
-        if self.amountOfSims > 9:
+        if self.trainingRoundsCompleted > 9:
             x_tens = torch.tensor(state, dtype=torch.float).to(self.device)
             v = self.value_model.f(x_tens.reshape(-1, 6, self.size, self.size).float()).cpu().detach().item()
             if v > 0.5:
@@ -385,7 +385,7 @@ class MCTSDNN:
                 #self.env.render("terminal")
 
             #self.backpropagate(self.current_node, self.env.winner())
-            self.amountOfSims += 1
+            self.trainingRoundsCompleted += 1
 
             # Iterate the fucking tree
             print("Storing data")
@@ -459,7 +459,7 @@ class MCTSDNN:
     
         # Need to create an environment from self.current_node
 
-        if self.amountOfSims > 9:
+        if self.trainingRoundsCompleted > 9:
             x_tens = torch.tensor(env_copy.state(), dtype=torch.float).to(self.device)
             v = self.value_model.f(x_tens.reshape(-1, 6, self.size, self.size).float()).cpu().detach().item()
             if v > 0.5:
