@@ -194,7 +194,7 @@ class MCTSDNN:
                 if self.prob_pol:
                     action = self.play_policy_prob(env_copy)
                 else:
-                    action = self.play_policy_greedy(env.copy)
+                    action = self.play_policy_greedy(env_copy)
                 state, _, done, _ = env_copy.step(action)
                 i+= 1
 
