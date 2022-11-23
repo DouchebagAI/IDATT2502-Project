@@ -449,6 +449,7 @@ class MCTSDNN:
     def simulate_2(self, env_copy):
         """
         
+        
         :return: value of the result (win: 1, loss: -1, tie: 0)
         """
     
@@ -465,12 +466,16 @@ class MCTSDNN:
                 return 0
         else:
             done = False
+            i = 0
             while not done:
+                if i > 100:
+                    break
                 if self.prob_pol:
                     action = self.play_policy_prob(env_copy)
                 else:
                     action = self.play_policy_greedy(env_copy)
                 state, _, done, _ = env_copy.step(action)
+                i+= 1
             v = env_copy.winner()
             return v
 
