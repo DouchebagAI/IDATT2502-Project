@@ -27,7 +27,8 @@ import gym
 
 class MCTSDNN:
 
-    def __init__(self, env: gym.Env, size, model, kernel_size=3):
+    def __init__(self, env: gym.Env, size, model, kernel_size=3, prob_policy = True):
+        self.prob_pol = prob_policy
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.size = size
         self.model_name = model
@@ -87,8 +88,10 @@ class MCTSDNN:
         """
         # Hvis ingen barn, velg en greedy policy
         action : int
-
-        action = self.play_policy_prob(self.env)
+        if self.prob_pol:
+            action = self.play_policy_prob(self.env)
+        else:
+            action = self.play_policy_greedy(self.env)
 
         self.move_count += 1
         return action
@@ -184,9 +187,16 @@ class MCTSDNN:
             else:
                 self.backpropagate(node.children[actionFromNode], 0)
         else:
+            i = 0
             while not done:
-                action = self.play_policy_prob(env_copy)
+                if i > 100:
+                    break
+                if self.prob_pol:
+                    action = self.play_policy_prob(env_copy)
+                else:
+                    action = self.play_policy_greedy(env.copy)
                 state, _, done, _ = env_copy.step(action)
+                i+= 1
 
             self.backpropagate(node.children[actionFromNode], env_copy.winner())
         return node
@@ -274,7 +284,9 @@ class MCTSDNN:
         y_train_batches = torch.split(y_train, batch)
         return x_train_batches, y_train_batches, x_test, y_test
 
-    def train_model(self, model, function, loss_list, acc_list):
+    
+
+    def train_model(self, model, function, loss_list, acc_list, mse_loss = True):
         x_train_batches, y_train_batches, x_test, y_test = function
         # Optimize: adjust W and b to minimize loss using stochastic gradient descent
         optimizer = torch.optim.Adam(model.parameters(), 0.0001)
@@ -282,15 +294,20 @@ class MCTSDNN:
         for _ in range(200):
             for batch in range(len(x_train_batches)):
                 # print(y_train_batches[batch])
-                model.mse_loss(x_train_batches[batch], y_train_batches[batch]).backward()  # Compute loss gradients
+                if mse_loss:
+                    model.mse_loss(x_train_batches[batch], y_train_batches[batch]).backward()  # Compute loss gradients
+                    loss_list.append(model.mse_loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
+                else:
+                    model.loss(x_train_batches[batch], y_train_batches[batch]).backward()
+                    loss_list.append(model.loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
                 #print(model.mse_loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
-                loss_list.append(model.mse_loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
+                
                 optimizer.step()  # Perform optimization by adjusting W and b,
                 optimizer.zero_grad()  # Clear gradients for next step
 
         # print(f"Loss: {self.model.loss(x_test, y_test)}")
-        acc_list.append(model.accuracy(x_test, y_test).cpu().detach())
-        print(f"Accuracy: {model.accuracy(x_test, y_test)}")
+        acc_list.append(model.mse_acc(x_test, y_test).cpu().detach())
+        print(f"Accuracy: {model.mse_acc(x_test, y_test)}")
 
     def train_model_value(self, model, function, loss_list, acc_list):
         x_train_batches, y_train_batches, x_test, y_test = function
@@ -341,7 +358,7 @@ class MCTSDNN:
         """
         return Type.BLACK if self.move_count % 2 == 0 else Type.WHITE
 
-    def train(self, n):
+    def train(self, n, mse_loss = True):
         """
         This is the main function for training the models.
         It will use the Monte Carlo Tree to pick the best action, and keep playing until it reaches terminal state.
@@ -376,10 +393,12 @@ class MCTSDNN:
 
             print("Training network")
             #(self.training_data)
-            self.train_model_value(self.value_model, self.get_training_data(self.training_win, self.test_win),
-                                   self.value_model_losses, self.value_model_accuracy)
+            
             self.train_model(self.model, self.get_training_data(self.training_data, self.test_data),
-                             self.model_losses, self.model_accuracy)
+                             self.model_losses, self.model_accuracy, mse_loss)
+                             
+            self.train_model_value(self.value_model, self.get_training_data(self.training_win, self.test_win),
+                            self.value_model_losses, self.value_model_accuracy)
 
             torch.save(self.model, f"models/SavedModels/{i}_Gen2_{self.model_name}.pt")
 
@@ -428,6 +447,11 @@ class MCTSDNN:
         return self.current_node.children[random.choice(list(self.current_node.children.keys()))]
 
     def simulate_2(self, env_copy):
+        """
+        
+        :return: value of the result (win: 1, loss: -1, tie: 0)
+        """
+    
         # Need to create an environment from self.current_node
 
         if self.amountOfSims > 9:
@@ -442,15 +466,28 @@ class MCTSDNN:
         else:
             done = False
             while not done:
-                action = self.play_policy_prob(env_copy)
+                if self.prob_pol:
+                    action = self.play_policy_prob(env_copy)
+                else:
+                    action = self.play_policy_greedy(env_copy)
                 state, _, done, _ = env_copy.step(action)
             v = env_copy.winner()
             return v
 
     def take_turn_2(self):
+        """
+        This is a function for picking the best move given a state.
+        It will create MCTS tree with 500 iterations, and at the end from the root choose the child with the highest value.
+        1.Starting with traversing the Monte Carlo Search Tree to a leaf node, allwaye picking the best child.
+        2.Expand the leaf node with all valid children nodes possible, and pick one of them random.
+        3.Simulate from the chosen node one time
+        4.Backpropogate the result from the simulation all the way back to the root
+        
+        :return: from root return best action  
+        """
         root = self.current_node
         # Create a MCTS from this current state with 500 iterations
-        for i in range(250):
+        for i in range(500):
             env_copy = copy.deepcopy(self.env)
             #print("iteration", i)
             done = False
