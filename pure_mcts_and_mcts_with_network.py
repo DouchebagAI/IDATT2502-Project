@@ -17,6 +17,7 @@ mcts.train(3)
 mctsdnn = MCTSDNN(env, size, "Go2")
 mctsdnn.train(3)
 networkWins = 0
+ties = 0
 for i in range(0,100):
     env.reset()
     mcts.reset()
@@ -38,9 +39,11 @@ for i in range(0,100):
     
     if env.winner() == -1:
         networkWins += 1
+    elif env.winner() == 0:
+        ties += 1
 
 
-print("Network wins: " + str(networkWins) + " out of 100 games")
+print("Network wins: " + str(networkWins) + ", ties: "+ str(ties) + " out of 100 games")
     
         
     
