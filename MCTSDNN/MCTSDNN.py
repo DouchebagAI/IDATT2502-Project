@@ -156,6 +156,24 @@ class MCTSDNN:
         
         return self.current_node.best_child(self.get_type()).action
 
+    def data_augmentation(self, state_and_target):
+        symmetries = self.env.gogame.all_symmetries(state_and_target[0])[:4]
+
+        target = state_and_target[1]
+        pass_ = target[-1]
+        target = target[:self.size**2].reshape(self.size, self.size)
+        data = []
+
+        for i in range(4):
+            target = target.T
+            data.append((symmetries[i],  np.append(target, pass_)))
+
+        print(data)
+        print(target)
+
+        pass
+
+
     def get_target(self, node: Node):
         y_t = np.zeros(self.size ** 2 + 1)
         for i in node.children.values():
@@ -292,7 +310,7 @@ class MCTSDNN:
         # Optimize: adjust W and b to minimize loss using stochastic gradient descent
         optimizer = torch.optim.Adam(model.parameters(), 0.0001)
 
-        for _ in range(1000):
+        for _ in range(500):
             for batch in range(len(x_train_batches)):
 
                 if mse_loss:

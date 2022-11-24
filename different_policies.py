@@ -34,14 +34,14 @@ def plot_training(mcts: MCTSDNN, title, loss, acc):
 model_prob_pol = MCTSDNN(go_env, size, "Go2", kernel_size=3, prob_policy=True)
 model_greedy_pol = MCTSDNN(go_env, size, "Go2", kernel_size=3, prob_policy=False)
 
-#model_prob_pol.train(5)
-#model_greedy_pol.train(5)
+model_prob_pol.train(3)
+model_greedy_pol.train(3)
 prob = 0
 greedy = 0
 tie = 0
 for i in range(100):
     # Same logic as in training, but instead user takes action when whites turn
-    print(i)
+    #print(i)
     go_env.reset()
     model_prob_pol.reset()
     model_greedy_pol.reset()
@@ -74,4 +74,4 @@ for i in range(100):
     model_prob_pol.reset()
     model_greedy_pol.reset()
 
-print(f"Score is Prob: {prob}(white), Greedy: {greedy}(black), Tie: {tie}")
+print(f"Score is Prob: {prob}(black), Greedy: {greedy}(white), Tie: {tie}")
