@@ -417,14 +417,14 @@ class MCTSDNN:
 
     def opponent_turn_update(self, action):
         self.move_count += 1
-        """
-        if move in self.current_node.children.keys():
-            self.current_node = self.current_node.children[move]
+
+        if action in self.current_node.children.keys():
+            self.current_node = self.current_node.children[action]
         else:
-            new_node = Node(self.current_node, move)
-            self.current_node.children.update({(move, new_node)})
+            new_node = Node(self.current_node, action)
+            self.current_node.children.update({(action, new_node)})
             self.current_node = new_node
-        """
+
 
     def reset(self):
         self.move_count = 0
@@ -500,7 +500,7 @@ class MCTSDNN:
         """
         root = self.current_node
         # Create a MCTS from this current state with 500 iterations
-        for i in range(500):
+        for i in range(100):
             env_copy = copy.deepcopy(self.env)
             #print("iteration", i)
             done = False

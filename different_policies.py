@@ -41,6 +41,7 @@ greedy = 0
 tie = 0
 for i in range(100):
     # Same logic as in training, but instead user takes action when whites turn
+    print(i)
     go_env.reset()
     model_prob_pol.reset()
     model_greedy_pol.reset()
