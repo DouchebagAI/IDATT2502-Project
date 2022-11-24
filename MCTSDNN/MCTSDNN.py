@@ -24,7 +24,6 @@ import gym
 10. Mekke turnering mot seg selv, vise forbedring av nettverk
 """
 
-
 class MCTSDNN:
 
     def __init__(self, env: gym.Env, size, model, kernel_size=3, prob_policy = True):
@@ -361,14 +360,16 @@ class MCTSDNN:
     def train(self, n, mse_loss = True):
         """
         This is the main function for training the models.
-        It will use the Monte Carlo Tree to pick the best action, and keep playing until it reaches terminal state.
-        Then it backpropogates the result (win, loss, tie) to update the tree.
-        The function then:
-            -> trains both models with the given data
+        It will use the Monte Carlo Tree  and CNN to pick the best action, and keep playing until it reaches terminal state.
+        Then:
+            -> Save all nodes in the MCTS to training and test data
+            -> Train both models(policy model and value model) with the given data
             -> Saves the policy model and all the training and test data
 
         :param n: The number of training rounds
+        :param mse_loss: boolean
         """
+
         for i in range(n):
             print(f"Training round: {i}")
             # Nullstiller brettet
@@ -437,6 +438,10 @@ class MCTSDNN:
 
     def expand_2(self, env_copy):
         """
+        This is a function for expanding the MCTS.
+        It will create all children based on the valied moves, and choose one of them randomly
+
+        :return: node
         """
          # Create all valid children nodes
         valid_moves = env_copy.valid_moves()
@@ -457,8 +462,6 @@ class MCTSDNN:
         :return: value of the result (win: 1, loss: -1, tie: 0)
         """
     
-        # Need to create an environment from self.current_node
-
         if self.amountOfSims > 9:
             x_tens = torch.tensor(env_copy.state(), dtype=torch.float).to(self.device)
             v = self.value_model.f(x_tens.reshape(-1, 6, self.size, self.size).float()).cpu().detach().item()
@@ -529,14 +532,20 @@ class MCTSDNN:
         return self.current_node.action
 
     def save_data(self):
-        # Creating test data and training data for the current node
+        """
+        This is a function for saving training and test data for a node.
+        -> 20% of the time it will append the data to the test data
+        -> 80% of the time it will append the data to the training data
+        The number of visits of a node also has to high enough to be saved
+        """
+        
         if (random.randint(1, 99) <= 20):
             y_t = np.zeros(1)
             if self.current_node.n > 10:
                 y_t[0] = self.current_node.V()
                 self.test_win.append((self.env.state(), y_t))
             y = self.get_target(self.current_node)
-            if np.sum(y) < 1000 and np.sum(y) != 0:
+            if np.sum(y) < 1000 and np.sum(y) != 0 and self.current_node.n > 10:
                 self.test_data.append((self.env.state(), y))
 
         else:
@@ -546,37 +555,18 @@ class MCTSDNN:
                 self.training_win.append((self.env.state(), y_t))
             y = self.get_target(self.current_node)
 
-            if np.sum(y) < 1000 and np.sum(y) != 0:
+            if np.sum(y) < 1000 and np.sum(y) != 0 and self.current_node.n > 10:
                 self.training_data.append((self.env.state(), y))
 
 
-        """
-        
-        # Add to children to current node
-        for i in self.current_node.children.values():
-            env_copy = copy.deepcopy(self.env)
-            state, _, _, _ = env_copy.step(i.action)
-            y_t = np.zeros(1)
-            if not i.n == 0:
-                y_t[0] = i.V()
-            if (random.randint(1, 99) <= 20):
-                y = self.get_target(i)
-                if np.sum(y) != 0 and np.sum(y) < 1000:
-                    self.test_data.append((state, y))
-                if i.n > 5:
-                    self.test_win.append((state, y_t))
-            else:
-                y = self.get_target(i)
-                if np.sum(y) != 0 and np.sum(y) < 1000:
-                    self.training_data.append((state, y))
-                if i.n > 10:
-                    self.training_win.append((state, y_t))
-        """
-
 
     def iterate_MCTS(self, node):
+        """
+        This function will iterate the MCTS from root and save each node on the way
 
-        # save the data
+        :param node: The main root of the MCTS
+        """
+
         self.current_node = node
         self.save_data()
 

@@ -47,7 +47,7 @@ class GoCNN(nn.Module):
 
     def mse_acc(self, x, y):
         #print(torch.tensor([True if i in torch.topk(torch.abs(y), 3).indices else False for i in torch.topk(self.f(x), 3).indices]))
-        return torch.mean(torch.tensor([True if i in torch.topk(torch.abs(y), 3).indices else False for i in torch.topk(self.f(x), 3).indices]).float())
+        return torch.mean(torch.tensor([True if i in torch.topk(torch.abs(y), 3).indices else False for i in torch.topk(self.f(x), 3).indices], dtype=torch.float).float())
 
     # Accuracy
     def accuracy(self, x, y):
