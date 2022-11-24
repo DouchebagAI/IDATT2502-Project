@@ -11,16 +11,17 @@ env = gym.make('gym_go:go-v0', size=size, komi=0, reward_method='real')
 gm = GameManager(env)
 
 noTree = MCTSDNN(env, size, "Go")
-noTree.train(5)
+noTree.train(10)
 
 withTree = MCTSDNN(env, size, "Go" )
-withTree.train(5)
+withTree.train(10)
 
 noTreeWins = 0
 withTreeWins = 0
 draws = 0
 
 for i in range(0,100):
+    print("Game: ", i)
     env.reset()
     noTree.reset()
     withTree.reset() 
