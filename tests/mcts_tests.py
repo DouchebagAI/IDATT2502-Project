@@ -6,7 +6,7 @@ mcts_white = MCTS(None, "white", -1)
 
 
 def init():
-    n1 =Node(mcts_black.R, 1)
+    n1 = Node(mcts_black.R, 1)
     mcts_black.R.children.update({(1, n1)})
     n2 = Node(n1, 2)
     n1.children.update({(2, n2)})

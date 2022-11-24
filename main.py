@@ -21,9 +21,10 @@ playerDCNN = MCTSDNN(go_env, size, "Go2", kernel_size=3)
 playerCNN = MCTSDNN(go_env, size, "Go", kernel_size=3)
 state, reward, done, info = go_env.step(9)
 
-playerDCNN.data_augmentation(m1[1])
+print(playerDCNN.data_augmentation(m1[1]))
 
-
+playerDCNN.training_data.extend(playerDCNN.data_augmentation(m1[1]))
+print(playerDCNN.training_data)
 gm = GameManager(go_env)
 
 

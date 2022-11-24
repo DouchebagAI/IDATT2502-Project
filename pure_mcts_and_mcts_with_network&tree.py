@@ -12,12 +12,14 @@ env = gym.make('gym_go:go-v0', size=size, komi=0, reward_method='real')
 gm = GameManager(env)
 
 mcts = MCTS(env)
-mcts.train(20)
+mcts.train(5)
 
-mctsdnn = MCTSDNN(env, size, "Go" )
-mctsdnn.train(20)
+mctsdnn = MCTSDNN(env, size, "Go2" )
+mctsdnn.train(5)
 networkWins = 0
-for i in range(0,100):
+ties = 0
+treeWins = 0
+for i in range(0,1000):
     env.reset()
     mcts.reset()
     mctsdnn.reset() 
@@ -38,6 +40,10 @@ for i in range(0,100):
     
     if env.winner() == -1:
         networkWins += 1
+    elif env.winner() == 0:
+        ties += 1
+    else:
+        treeWins += 1
 
 
 print("Network wins: " + str(networkWins) + " out of 100 games")
