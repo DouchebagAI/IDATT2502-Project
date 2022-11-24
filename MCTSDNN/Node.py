@@ -74,7 +74,6 @@ class Node:
         """
         return self.parent is None
 
-    # Update value and number of visits
     def update_node(self, v):
         """
         This is a function for updating the value and the number of visits of a node.
@@ -95,7 +94,6 @@ class Node:
         if len(self.children) == 0:
             return None
 
-        # Find best child
         best_child = max(self.children.values(), key=lambda x: x.get_value(type))
 
         return best_child
