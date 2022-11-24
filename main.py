@@ -15,6 +15,15 @@ from GameManager import GameManager
 size = 5
 go_env = gym.make('gym_go:go-v0', size=size, komi=0, reward_method='real')
 
+go_env.reset()
+m1 = np.load("models/training_data/model_168_3e15f1db-a1a3-4b00-a262-977aecaa85e6.npy", allow_pickle=True)
+playerDCNN = MCTSDNN(go_env, size, "Go2", kernel_size=3)
+playerCNN = MCTSDNN(go_env, size, "Go", kernel_size=3)
+state, reward, done, info = go_env.step(9)
+
+playerDCNN.data_augmentation(m1[1])
+
+
 gm = GameManager(go_env)
 
 
@@ -63,9 +72,8 @@ def play(black_p, white_p, n=100):
     """
 
 
-# go_env.reset()
-# state, reward, done, info = go_env.step(9)
-# print(state[2][0])
+
+print(int(state[2][0][0]))
 # print(reward)
 # print(info)
 player_tree_only = MCTSTREE(go_env)
@@ -77,13 +85,12 @@ print("Trener standard MCTS")
 # player10 = MCTSDNN(go_env, size, "Go", kernel_size=5)
 
 # player10.print_tree()
-playerDCNN = MCTSDNN(go_env, size, "Go2", kernel_size=3)
-playerCNN = MCTSDNN(go_env, size, "Go", kernel_size=3)
+
 # print("Trener andre tre")
 #print("Trener MCTS /m CNN")
 #gm.play_tournament()
 # print(np.load("models/training_data/value_model.npy", allow_pickle=True))
-m1 = np.load("models/training_data/model_168_3e15f1db-a1a3-4b00-a262-977aecaa85e6.npy", allow_pickle=True)
+
 m2 = np.load("models/training_data/model_e2c6149d-4745-455a-b5fc-e5383a153079.npy", allow_pickle=True)
 t1 = np.load("models/test_data/model_71_44bb6ddf-46e6-4c81-bee5-2c38f2834359.npy", allow_pickle=True)
 m3 = np.concatenate((m1, m2))
@@ -96,11 +103,11 @@ v_m3 = np.concatenate((v_m2, v_m1))
 #playerCNN.train_model(playerCNN.model,
                       #playerCNN.get_training_data(m3, t1), playerCNN.model_losses, playerCNN.model_accuracy)
 #playerDCNN.train(4)
-#playerDCNN.train_model(playerDCNN.model,
-                       #playerDCNN.get_training_data(m3, t1), playerDCNN.model_accuracy, playerDCNN.model_accuracy)
+playerDCNN.train_model(playerDCNN.model,
+                       playerDCNN.get_training_data(m3, t1), playerDCNN.model_losses, playerDCNN.model_accuracy)
 
-#playerDCNN.train_model_value(playerDCNN.value_model,
- #playerDCNN.get_training_data(v_m3, v_t1), playerDCNN.value_model_accuracy, playerDCNN.value_model_accuracy)
+playerDCNN.train_model_value(playerDCNN.value_model,
+ playerDCNN.get_training_data(v_m3, v_t1), playerDCNN.value_model_losses, playerDCNN.value_model_accuracy)
 
 playerDCNN.train(7)
 gm.play_as_white(playerDCNN)
