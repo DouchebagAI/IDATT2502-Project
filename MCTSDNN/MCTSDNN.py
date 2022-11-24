@@ -142,13 +142,13 @@ class MCTSDNN:
             if (random.randint(1, 99) <= 20):
                 y = self.get_target(i)
                 if np.sum(y) != 0 and np.sum(y) < 1000:
-                    self.test_data.append((state, y))
+                    self.test_data.append(self.data_augmentation((state, y)))
                 if i.n > 5:
                     self.test_win.append((state, y_t))
             else:
                 y = self.get_target(i)
                 if np.sum(y) != 0 and np.sum(y) < 1000:
-                    self.training_data.append((state, y))
+                    self.training_data.append(self.data_augmentation((state, y)))
                 if i.n > 10:
                     self.training_win.append((state, y_t))
 
@@ -157,21 +157,33 @@ class MCTSDNN:
         return self.current_node.best_child(self.get_type()).action
 
     def data_augmentation(self, state_and_target):
-        symmetries = self.env.gogame.all_symmetries(state_and_target[0])[:4]
+        symmetries = self.env.gogame.all_symmetries(state_and_target[0])
 
         target = state_and_target[1]
-        pass_ = target[-1]
+        _pass = target[-1]
         target = target[:self.size**2].reshape(self.size, self.size)
         data = []
 
-        for i in range(4):
-            target = target.T
-            data.append((symmetries[i],  np.append(target, pass_)))
+        for i in range(8):
+            x = symmetries[i]
+            y = target
+            if (i >> 0) % 2:
+                # Horizontal flip
+                x = np.flip(x, 2)
+                y = np.flip(target)
+            if (i >> 1) % 2:
+                # Vertical flip
+                x = np.flip(x, 1)
+                y = np.flip(target)
+            if (i >> 2) % 2:
+                # Rotation 90 degrees
+                x = np.rot90(x, axes=(1, 2))
+                y = np.rot90(target)
+            symmetries.append(x)
+            data.append((x, np.append(y,_pass)))
 
-        print(data)
-        print(target)
 
-        pass
+        return data
 
 
     def get_target(self, node: Node):
@@ -550,7 +562,7 @@ class MCTSDNN:
         self.current_node = self.current_node.best_child(self.get_type())
         return self.current_node.action
 
-    def save_data(self):
+    def save_data(self, data_augment = True):
 
         self.move_count = int(self.current_node.state[2][0][0])
         # Creating test data and training data for the current node
@@ -561,7 +573,10 @@ class MCTSDNN:
                 self.test_win.append((self.current_node.state, y_t))
             y = self.get_target(self.current_node)
             if np.sum(y) < 1000 and np.sum(y) != 0 and self.current_node.n >= 30:
-                self.test_data.append((self.current_node.state, y))
+                if data_augment:
+                    self.test_data.append(self.data_augmentation((self.current_node.state, y)))
+                else:
+                    self.test_data.append((self.current_node.state, y))
 
         else:
             y_t = np.zeros(1)
@@ -571,7 +586,10 @@ class MCTSDNN:
             y = self.get_target(self.current_node)
 
             if np.sum(y) < 1000 and np.sum(y) != 0 and self.current_node.n >= 30:
-                self.training_data.append((self.current_node.state, y))
+                if data_augment:
+                    self.test_data.append(self.data_augmentation((self.current_node.state, y)))
+                else:
+                    self.test_data.append((self.current_node.state, y))
 
 
         """
