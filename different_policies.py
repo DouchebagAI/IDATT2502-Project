@@ -47,7 +47,7 @@ for i in range(100):
     model_greedy_pol.reset()
     done = False
     while not done:
-        action = model_prob_pol.take_turn_2()
+        action = model_prob_pol.take_turn_play(go_env)
         # print(action)
         _, _, done, _ = go_env.step(action)
 
@@ -56,7 +56,7 @@ for i in range(100):
         if done:
             break
 
-        action = model_greedy_pol.take_turn_2()
+        action = model_greedy_pol.take_turn_play(go_env)
         _, _, done, _ = go_env.step(action)
         model_prob_pol.opponent_turn_update(action)
 
@@ -75,3 +75,6 @@ for i in range(100):
     model_greedy_pol.reset()
 
 print(f"Score is Prob: {prob}(black), Greedy: {greedy}(white), Tie: {tie}")
+plot_training(model_prob_pol, "Model W/ Prob Policy", model_prob_pol.model_losses, model_prob_pol.model_accuracy)
+
+plot_training(model_greedy_pol, "Model W/ Greedy Policy", model_greedy_pol.model_losses, model_greedy_pol.model_accuracy)
