@@ -294,10 +294,11 @@ class MCTSDNN:
                 # Gjør et trekk
                 action = self.take_turn_2()
                 _, _, done, _ = self.env.step(action)
+
                 print("Round ", rounds)
                 rounds += 1
 
-                #self.env.render("terminal")
+                self.env.render("terminal")
 
             #self.backpropagate(self.current_node, self.env.winner())
             self.trainingRoundsCompleted += 1
@@ -315,7 +316,8 @@ class MCTSDNN:
             self.train_model_value(self.value_model, self.get_training_data(self.training_win, self.test_win),
                             self.value_model_losses, self.value_model_accuracy)
 
-            torch.save(self.model, f"models/SavedModels/{i}_Gen2_{self.model_name}.pt")
+            torch.save(self.model, f"models/SavedModels/{i}_Gen2{self.model_name}.pt")
+            torch.save(self.value_model, f"models/SavedModels/{i}_Gen2_{self.model_name}_value.pt")
             self.env.reset()
             self.R = Node(None, None)
             self.reset()
