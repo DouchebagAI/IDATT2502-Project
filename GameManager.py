@@ -37,7 +37,7 @@ class GameManager:
         mcts2.reset()
         done = False
         while not done:
-            action = mcts1.take_turn_play()
+            action = mcts1.take_turn_2()
             # print(action)
             _, _, done, _ = self.env.step(action)
             
@@ -46,7 +46,7 @@ class GameManager:
             if done:
                 break
             
-            action = mcts2.take_turn_play()
+            action = mcts2.take_turn_2()
             _, _, done, _ = self.env.step(action)
             mcts1.opponent_turn_update(action)
         #mcts1.backpropagate(mcts1.current_node, self.env.winner())
@@ -77,46 +77,40 @@ class GameManager:
         return self.env.winner()
 
 
-    def play_tournament(self):
+    def play_tournament(self, player=6, num_players=10):
         # Extracting all models
         players = []
         print("Henter ut alle spillerne")
 
-        for i in range(20):
-            model = torch.load(f"models/SavedModels/{i}.pt", map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+        for i in range(num_players):
+            model = torch.load(f"models/SavedModels/{i}_Gen2_Go2.pt", map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
             model.eval()
+            value_model = torch.load(f"models/SavedModels/{i}_Gen2_Go2_value.pt", map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+            value_model.eval()
             # Convert to tree
             tree = MCTSDNN(self.env, 5, "Go2", kernel_size=3)
             tree.model = model
+            tree.value_model = value_model
             players.append(tree)
         win_dict = dict()
         # Playing the tournament
         print("Playing turnering")
-        for i in range(1,20):
+        for i in range(1,num_players):
             print(f"Round {i}")
             numberOfWins = 0
-            for j in range(1000):
+            for j in range(100):
                 if(j%2 == 0):
-                    winner = self.test(players[0], players[i])
+                    winner = self.test(players[player], players[i])
                     if winner == 1:
                         numberOfWins += 1
                 else:
-                    winner = self.test(players[i], players[0])
+                    winner = self.test(players[i], players[player])
                     if winner == -1:
                         numberOfWins += 1
             # Update win dict
             win_dict.update({i: numberOfWins})
             print(f"Player 0 won {numberOfWins} times against player {i}")
-        # Plot the results
-        print(len(list(win_dict.keys())))
-        print(len(list(win_dict.values())))
-        plt.figure()
-        plt.title("Tournament : As model 0")
-        plt.xlabel("Model iterations")
-        plt.ylim(0,1000)
-        plt.ylabel("Wins for model 0")
-        plt.plot(np.array(list(win_dict.keys())),np.array(list(win_dict.values())))
-        plt.show()
+        return win_dict
 
         
     def print_winner(self):
