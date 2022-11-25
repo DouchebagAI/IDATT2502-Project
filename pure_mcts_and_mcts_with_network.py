@@ -12,14 +12,14 @@ env = gym.make('gym_go:go-v0', size=size, komi=0, reward_method='real')
 gm = GameManager(env)
 
 mcts = MCTS(env)
-mctsdnn = MCTSDNN(env, size, "Go2")
-mctsdnn.train(4)
-mcts.train(4)
+mctsdnn = MCTSDNN(env, size, "Go2", prob_policy=False, data_augment=False)
+mctsdnn.train(5)
+mcts.train(5)
 
 
 networkWins = 0
 ties = 0
-for i in range(0,1000):
+for i in range(0,100):
     env.reset()
     mcts.reset()
     mctsdnn.reset() 

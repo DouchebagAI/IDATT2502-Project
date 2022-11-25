@@ -75,3 +75,6 @@ for i in range(100):
     model_greedy_pol.reset()
 
 print(f"Score is Prob: {prob}(black), Greedy: {greedy}(white), Tie: {tie}")
+plot_training(model_prob_pol, "Model W/ Prob Policy", model_prob_pol.model_losses, model_prob_pol.model_accuracy)
+
+plot_training(model_greedy_pol, "Model W/ Greedy Policy", model_greedy_pol.model_losses, model_greedy_pol.model_accuracy)
