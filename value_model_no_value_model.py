@@ -85,6 +85,8 @@ for i in range(0, 100):
         _, _, done, _ = env.step(action)
         no_val_net.opponent_turn_update(action)
     env.winner()
+    no_val_net.move_count = 0
+    val_net.move_count = 0
     if env.winner() == 1:
         playerGo_win += 1
     elif env.winner() == -1:
