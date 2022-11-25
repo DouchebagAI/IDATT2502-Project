@@ -47,7 +47,7 @@ for i in range(100):
     model_greedy_pol.reset()
     done = False
     while not done:
-        action = model_prob_pol.take_turn_play(go_env)
+        action = model_prob_pol.take_turn_2()
         # print(action)
         _, _, done, _ = go_env.step(action)
 
@@ -56,7 +56,7 @@ for i in range(100):
         if done:
             break
 
-        action = model_greedy_pol.take_turn_play(go_env)
+        action = model_greedy_pol.take_turn_2()
         _, _, done, _ = go_env.step(action)
         model_prob_pol.opponent_turn_update(action)
 
