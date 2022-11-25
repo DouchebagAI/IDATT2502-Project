@@ -75,15 +75,16 @@ class MCTSDNN:
         self.move_count += 1
         return action
 
+
     def data_augmentation(self, state_and_target):
-        symmetries = self.env.gogame.all_symmetries(state_and_target[0])
+        symmetries = self.env.gogame.all_symmetries(state_and_target[0])[:4]
 
         target = state_and_target[1]
         _pass = target[-1]
         target = target[:self.size**2].reshape(self.size, self.size)
         data = []
 
-        for i in range(8):
+        for i in range(4):
             x = symmetries[i]
             y = target
             if (i >> 0) % 2:
