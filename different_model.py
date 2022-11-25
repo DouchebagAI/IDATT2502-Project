@@ -18,7 +18,7 @@ def plot_training(mcts: MCTSDNN, title, loss, acc):
     # plt.savefig(f"graphs/{uuid.uuid4()}.png")
 
     plt.figure()
-    plt.ylim(0,100)
+    plt.ylim(0,1)
     plt.plot(accuracy, label="Accuracy", color="Green")
     plt.xlabel('Iterations')
     plt.ylabel('Accuracy')
@@ -32,9 +32,9 @@ env = gym.make('gym_go:go-v0', size=size, komi=0, reward_method='real')
 
 gm = GameManager(env)
 
-playerGo = MCTSDNN(env, size, "Go", kernel_size=3)
+playerGo = MCTSDNN(env, size, "Go", kernel_size=3, data_augment=False)
 playerGo.train(10, mse_loss=True)
-playerGo2 = MCTSDNN(env, size, "Go2", kernel_size=3)
+playerGo2 = MCTSDNN(env, size, "Go2", kernel_size=3, data_augment=False)
 playerGo2.train(10, mse_loss=True)
 
 plot_training(playerGo, "MSE Loss Go1", playerGo.model_losses, playerGo.model_accuracy)
@@ -46,12 +46,13 @@ playerGo2_win = 0
 draws = 0
 
 for i in range(0,100):
+    print(i)
     env.reset()
     playerGo.reset()
     playerGo2.reset() 
     done = False
     while not done:
-        action = playerGo.take_turn_2()
+        action = playerGo.take_turn_play()
         _, _, done, _ = env.step(action)
         
         playerGo2.opponent_turn_update(action)
@@ -59,7 +60,7 @@ for i in range(0,100):
         if done:
             break
         
-        action = playerGo2.take_turn_2()
+        action = playerGo2.take_turn_play()
         _, _, done, _ = env.step(action)
         playerGo.opponent_turn_update(action)
     env.winner()

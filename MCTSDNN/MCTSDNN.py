@@ -27,7 +27,9 @@ import gym
 
 class MCTSDNN:
 
-    def __init__(self, env: gym.Env, size, model, kernel_size=3, prob_policy = True, data_augment = True):
+    def __init__(self, env: gym.Env, size, model, kernel_size=3, prob_policy = False, data_augment = False,
+                 value_network = True):
+        self.value_network = value_network
         self.prob_pol = prob_policy
         self.data_augment = data_augment
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -78,7 +80,7 @@ class MCTSDNN:
 
     def data_augmentation(self, state_and_target):
         symmetries = self.env.gogame.all_symmetries(state_and_target[0])[:4]
-
+        #symmetries = self.env.gogame.all_symmetries(state_and_target[0])
         target = state_and_target[1]
         _pass = target[-1]
         target = target[:self.size**2].reshape(self.size, self.size)
@@ -382,8 +384,8 @@ class MCTSDNN:
         :return: value of the result (win: 1, loss: -1, tie: 0)
         """
     
-        if self.trainingRoundsCompleted > 2 or (len(self.value_model_accuracy) != 0 and
-                self.value_model_accuracy[-1] > 0.7):
+        if self.value_network and (self.trainingRoundsCompleted > 2 or (len(self.value_model_accuracy) != 0 and
+                self.value_model_accuracy[-1] > 0.7)):
             x_tens = torch.tensor(env_copy.state(), dtype=torch.float).to(self.device)
             v = self.value_model.f(x_tens.reshape(-1, 6, self.size, self.size).float()).cpu().detach().item()
             if v > 0.5:
