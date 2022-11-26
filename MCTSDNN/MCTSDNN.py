@@ -316,7 +316,7 @@ class MCTSDNN:
             self.train_model_value(self.value_model, self.get_training_data(self.training_win, self.test_win),
                             self.value_model_losses, self.value_model_accuracy)
 
-            torch.save(self.model, f"models/SavedModels/{i}_Gen2{self.model_name}.pt")
+            torch.save(self.model, f"models/SavedModels/{i}_Gen2_{self.model_name}.pt")
             torch.save(self.value_model, f"models/SavedModels/{i}_Gen2_{self.model_name}_value.pt")
             self.env.reset()
             self.R = Node(None, None)
@@ -388,6 +388,7 @@ class MCTSDNN:
     
         if self.value_network and (self.trainingRoundsCompleted > 2 or (len(self.value_model_accuracy) != 0 and
                 self.value_model_accuracy[-1] > 0.7)):
+            print("Using value network")
             x_tens = torch.tensor(env_copy.state(), dtype=torch.float).to(self.device)
             v = self.value_model.f(x_tens.reshape(-1, 6, self.size, self.size).float()).cpu().detach().item()
             if v > 0.5:

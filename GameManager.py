@@ -50,6 +50,7 @@ class GameManager:
             action = mcts2.take_turn_2()
             _, _, done, _ = self.env.step(action)
             mcts1.opponent_turn_update(action)
+            self.env.render("terminal")
         #mcts1.backpropagate(mcts1.current_node, self.env.winner())
         #mcts2.backpropagate(mcts2.current_node, self.env.winner())
         return self.env.winner()
@@ -78,12 +79,12 @@ class GameManager:
         return self.env.winner()
 
 
-    def play_tournament(self, player=6, num_players=10):
+    def play_tournament(self, player=6, num_opponents=10):
         # Extracting all models
         players = []
         print("Henter ut alle spillerne")
 
-        for i in range(num_players):
+        for i in range(num_opponents):
             model = torch.load(f"models/SavedModels/{i}_Gen2_Go2.pt", map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
             model.eval()
             value_model = torch.load(f"models/SavedModels/{i}_Gen2_Go2_value.pt", map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
@@ -93,25 +94,35 @@ class GameManager:
             tree.model = model
             tree.value_model = value_model
             players.append(tree)
+        model = torch.load(f"models/SavedModels/{player}_Gen2_Go2.pt", map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+        model.eval()
+        value_model = torch.load(f"models/SavedModels/{player}_Gen2_Go2_value.pt", map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+        value_model.eval()
+        # Convert to tree
+        tree = MCTSDNN(self.env, 5, "Go2", kernel_size=3, prob_policy=False)
+        tree.model = model
+        tree.value_model = value_model
+        players.append(tree)
+
         win_dict = dict()
         # Playing the tournament
         print("Playing turnering")
-        for i in range(1,num_players):
+        for i in range(1,num_opponents):
             print(f"Round {i}")
             numberOfWins = 0
-            for j in range(20):
+            for j in range(2):
                 print(f"Game {i}.{j}")
                 if(j%2 == 0):
-                    winner = self.test(players[player], players[i])
+                    winner = self.test(players[len(players)-1], players[i])
                     if winner == 1:
                         numberOfWins += 1
                 else:
-                    winner = self.test(players[i], players[player])
+                    winner = self.test(players[i], players[len(players)-1])
                     if winner == -1:
                         numberOfWins += 1
             # Update win dict
             win_dict.update({i: numberOfWins})
-            print(f"Player 0 won {numberOfWins} times against player {i}")
+            print(f"Player {player} won {numberOfWins} times against player {i}")
         return win_dict
 
         
