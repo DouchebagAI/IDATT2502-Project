@@ -5,7 +5,7 @@ import matplotlib as plt
 import numpy as np
 
 size = 5
-number_of_players = 6
+number_of_players = 10
 
 go_env = gym.make("gym_go:go-v0", size=size, komi=0, reward_method="real")
 #playerDCNN = MCTSDNN(go_env, size, "Go2", kernel_size=3)

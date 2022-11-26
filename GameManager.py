@@ -40,6 +40,7 @@ class GameManager:
             action = mcts1.take_turn_2()
             # print(action)
             _, _, done, _ = self.env.step(action)
+            self.env.render("terminal")
             
             mcts2.opponent_turn_update(action)
                         
@@ -88,7 +89,7 @@ class GameManager:
             value_model = torch.load(f"models/SavedModels/{i}_Gen2_Go2_value.pt", map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
             value_model.eval()
             # Convert to tree
-            tree = MCTSDNN(self.env, 5, "Go2", kernel_size=3)
+            tree = MCTSDNN(self.env, 5, "Go2", kernel_size=3, prob_policy=False)
             tree.model = model
             tree.value_model = value_model
             players.append(tree)
@@ -98,7 +99,8 @@ class GameManager:
         for i in range(1,num_players):
             print(f"Round {i}")
             numberOfWins = 0
-            for j in range(100):
+            for j in range(20):
+                print(f"Game {i}.{j}")
                 if(j%2 == 0):
                     winner = self.test(players[player], players[i])
                     if winner == 1:
