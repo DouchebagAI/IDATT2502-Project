@@ -33,9 +33,19 @@ env = gym.make('gym_go:go-v0', size=size, komi=0, reward_method='real')
 gm = GameManager(env)
 
 playerGo = MCTSDNN(env, size, "Go", kernel_size=3, data_augment=False)
-playerGo.train(10, mse_loss=True)
+#playerGo.train(10, mse_loss=True)
 playerGo2 = MCTSDNN(env, size, "Go2", kernel_size=3, data_augment=False)
-playerGo2.train(10, mse_loss=True)
+#playerGo2.train(10, mse_loss=True)
+m1 = np.load("models/training_data/model_168_3e15f1db-a1a3-4b00-a262-977aecaa85e6.npy", allow_pickle=True)
+m2 = np.load("models/training_data/model_e2c6149d-4745-455a-b5fc-e5383a153079.npy", allow_pickle=True)
+t1 = np.load("models/test_data/model_71_44bb6ddf-46e6-4c81-bee5-2c38f2834359.npy", allow_pickle=True)
+m3 = np.concatenate((m1, m2))
+
+playerGo.train_model(playerGo.model,
+                       playerGo.get_training_data(m3, t1), playerGo.model_losses, playerGo.model_accuracy)
+
+playerGo2.train_model(playerGo2.model,
+                       playerGo2.get_training_data(m3, t1), playerGo2.model_losses, playerGo2.model_accuracy)
 
 plot_training(playerGo, "MSE Loss Go1", playerGo.model_losses, playerGo.model_accuracy)
 
@@ -52,17 +62,21 @@ for i in range(0,100):
     playerGo2.reset() 
     done = False
     while not done:
-        action = playerGo.take_turn_play()
+        action = playerGo.take_turn_2()
         _, _, done, _ = env.step(action)
-        
+        env.render('terminal')
         playerGo2.opponent_turn_update(action)
                 
         if done:
             break
         
-        action = playerGo2.take_turn_play()
+        action = playerGo2.take_turn_2()
         _, _, done, _ = env.step(action)
+        env.render('terminal')
         playerGo.opponent_turn_update(action)
+
+    playerGo.move_count = 0
+    playerGo2.move_count = 0
     env.winner()
     if env.winner() == 1:
         playerGo_win += 1
