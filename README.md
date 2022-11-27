@@ -9,10 +9,3 @@ By using value network with a tree, we see that it has a significantcly faster d
 Our results open up for discussion. As a cause of lack of data-power, we were not able to test on large board sizes. We also have limited power to simulate games when expanding, this might lead to bad or incorrect training data.
 
 A pattern that appears is that a more trained model will perform better than a less trained one. Also, a player that uses a value network will play significantly faster than a player that does not use a value network
-
-# Installation and setup
-
-```bash
-# In the root directory
-pip install -e .
-```
