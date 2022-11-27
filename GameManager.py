@@ -84,39 +84,49 @@ class GameManager:
         players = []
         print("Henter ut alle spillerne")
 
+        # Extracting all opponent models
         for i in range(num_opponents):
-            model = torch.load(f"models/SavedModels/{i}_Gen2_Go2.pt", map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-            model.eval()
-            value_model = torch.load(f"models/SavedModels/{i}_Gen2_Go2_value.pt", map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-            value_model.eval()
-            # Convert to tree
-            tree = MCTSDNN(self.env, 5, "Go2", kernel_size=3, prob_policy=False)
-            tree.model = model
-            tree.value_model = value_model
-            players.append(tree)
+            if( i != player and i % 2 == 0):
+                model = torch.load(f"models/SavedModels/{i}_Gen2_Go2.pt", map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+                model.eval()
+                value_model = torch.load(f"models/SavedModels/{i}_Gen2_Go2_value.pt", map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+                value_model.eval()
+                # Convert to tree
+                tree = MCTSDNN(self.env, 5, "Go2", kernel_size=3, prob_policy=False)
+                tree.model = model
+                tree.value_model = value_model
+                tree.trainingRoundsCompleted = i+1
+                players.append(tree)
+
+        # Extracting player model
         model = torch.load(f"models/SavedModels/{player}_Gen2_Go2.pt", map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
         model.eval()
         value_model = torch.load(f"models/SavedModels/{player}_Gen2_Go2_value.pt", map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
         value_model.eval()
+
         # Convert to tree
         tree = MCTSDNN(self.env, 5, "Go2", kernel_size=3, prob_policy=False)
         tree.model = model
         tree.value_model = value_model
+        tree.trainingRoundsCompleted = player
         players.append(tree)
 
         win_dict = dict()
+
         # Playing the tournament
         print("Playing turnering")
         for i in range(1,num_opponents):
             print(f"Round {i}")
             numberOfWins = 0
-            for j in range(2):
+            for j in range(30):
                 print(f"Game {i}.{j}")
                 if(j%2 == 0):
+                    print("Player is BLACK")
                     winner = self.test(players[len(players)-1], players[i])
                     if winner == 1:
                         numberOfWins += 1
                 else:
+                    print("Player is WHITE")
                     winner = self.test(players[i], players[len(players)-1])
                     if winner == -1:
                         numberOfWins += 1
