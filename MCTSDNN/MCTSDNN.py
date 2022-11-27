@@ -50,7 +50,7 @@ class MCTSDNN:
     def take_turn_play(self):
         """
         This is a function for choosing the best move with only the trained neural network model.
-        With a greedy- or a probability policy
+        With a greedy- or a probability policy.
 
         :return: action
         """
@@ -65,14 +65,20 @@ class MCTSDNN:
         return action
 
     def data_augmentation(self, state_and_target):
-        symmetries = self.env.gogame.all_symmetries(state_and_target[0])[:4]
-        # symmetries = self.env.gogame.all_symmetries(state_and_target[0])
+        """
+        Method to create 8 symmetries from a single game state
+        Used to create more training data, if needed
+        
+        :param state_and_target:
+        :return: data
+        """
+        symmetries = self.env.gogame.all_symmetries(state_and_target[0])
         target = state_and_target[1]
         _pass = target[-1]
         target = target[:self.size ** 2].reshape(self.size, self.size)
         data = []
 
-        for i in range(4):
+        for i in range(8):
             x = symmetries[i]
             y = target
             if (i >> 0) % 2:
@@ -93,6 +99,13 @@ class MCTSDNN:
         return data
 
     def get_target(self, node: Node):
+        """
+        Method to create a list with actions from a single state
+        Used to get target for model to train
+        
+        :param node: Node
+        :return: target of a node
+        """
         y_t = np.zeros(self.size ** 2 + 1)
         for i in node.children.values():
             y_t[i.action] = i.get_value_default(self.get_type())
@@ -100,6 +113,13 @@ class MCTSDNN:
         return y_t
 
     def action_based_on_prob(self, actions_softmax):
+        """
+        Method that returns a random action from a list of with actions that are softmaxed
+        Creates random number and adds list items value until value is reached. 
+
+        :param actions_softmax:
+        :return: action
+        """
         numb = np.random.rand()
 
         sum = 0
@@ -110,21 +130,26 @@ class MCTSDNN:
         return len(actions_softmax)
 
     def play_policy_prob(self, env):
+        """
+        Method that returns an action following a probability distributed policy
+        
+        :param env: The enviorment
+        :return: action
+        """
+
         x_tens = torch.tensor(env.state(), dtype=torch.float).to(self.device)
         y = self.model.f_2(x_tens.reshape(-1, 6, self.size, self.size).float())
 
-        # print(y.shape)
+    
         y = y.cpu().detach()
 
         y = torch.multiply(y, torch.tensor(env.valid_moves()))
-        # print(y)
-        # print(env.valid_moves())
-        # print(y[0])
+     
 
         for i, u in enumerate(y[0]):
             if u == 0.0:
                 y[0][i] = torch.finfo(torch.float64).min
-        # print(y)
+       
 
         sm = torch.softmax(torch.tensor(y, dtype=torch.float), dim=1)
         action = self.action_based_on_prob(sm[0])
@@ -132,10 +157,12 @@ class MCTSDNN:
         return action
 
     def play_policy_greedy(self, env):
+        """
+        Method that returns an action following a greedy policy (best move only)
+        
+        :param env: The enviorment
+        """
 
-        # env_copy = copy.deepcopy(self.env)
-        # state, _, _, _ = env_copy.step(node.action)
-        # node.state = self.env.state()[0] - self.env.state()[1
         x_tens = torch.tensor(env.state(), dtype=torch.float).to(self.device)
 
         y = self.model.f(x_tens.reshape(-1, 6, self.size, self.size).float())
@@ -144,11 +171,16 @@ class MCTSDNN:
         return index.item()
 
     def data_to_tensor(self, data):
+        """
+        This is a function for create a list with states and a list with the matching target
+        
+        :param data:
+        :return a list with states and a list with the matching target
+        """
         x_train = []
         random.shuffle(data)
         y_train = []
 
-        # print(self.states[0][1])
         for i, tup in enumerate(data):
             x_train.append(tup[0])
             y_train.append(tup[1])
@@ -161,60 +193,74 @@ class MCTSDNN:
         return x_tens, y_tens
 
     def get_training_data(self, train, test):
+        """
+        This is a function for getting training data in batches, test data, and training data without batches
+
+        :param train: 
+        :param test:
+        :return: training data in batches, test data, and training data without batches
+        """
         x_train, y_train = self.data_to_tensor(train)
         x_test, y_test = self.data_to_tensor(test)
         print(y_train.shape)
         batch = 8
         x_train_batches = torch.split(x_train, batch)
-        # print(len(x_train_batches))
-        # print(x_train_batches[0])
         y_train_batches = torch.split(y_train, batch)
+        
         return x_train_batches, y_train_batches, x_test, y_test, x_train, y_train
 
     def train_model(self, model, function, loss_list, acc_list, mse_loss=True):
+        """
+        This is a function for training the policy model
+        Using Adam optimizer and training in batches (batch size 8)
+
+        :param model:
+        :param function:
+        :param loss_list:
+        :param acc_list:
+        :param mse_loss: boolean
+        """
         x_train_batches, y_train_batches, x_test, y_test, x_train, y_train = function
-        # Optimize: adjust W and b to minimize loss using stochastic gradient descent
+        
         optimizer = torch.optim.Adam(model.parameters(), 0.0001)
 
         for _ in range(500):
             for batch in range(len(x_train_batches)):
 
                 if mse_loss:
-                    # print(x_train_batches[batch], y_train_batches[batch])
-                    model.mse_loss(x_train_batches[batch], y_train_batches[batch]).backward()  # Compute loss gradients
-                    #loss_list.append(model.mse_loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
+                    model.mse_loss(x_train_batches[batch], y_train_batches[batch]).backward() 
+                    loss_list.append(model.mse_loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
                 else:
                     model.loss(x_train_batches[batch], y_train_batches[batch]).backward()
-                    #loss_list.append(model.loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
+                    loss_list.append(model.loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
 
-                # print(model.mse_loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
+                optimizer.step()  
+                optimizer.zero_grad()  
 
-                optimizer.step()  # Perform optimization by adjusting W and b,
-                optimizer.zero_grad()  # Clear gradients for next step
-            if mse_loss:
-                # print(x_train_batches[batch], y_train_batches[batch])
-                loss_list.append(model.mse_loss(x_train, y_train).cpu().detach())
-                acc_list.append(model.mse_loss(x_test, y_test).cpu().detach())
-            else:
-                loss_list.append(model.loss(x_train, y_train).cpu().detach())
-
-        #acc_list.append(model.mse_acc(x_test, y_test).cpu().detach())
+        acc_list.append(model.mse_acc(x_test, y_test).cpu().detach())
         print(f"Accuracy: {model.mse_acc(x_test, y_test)}")
 
     def train_model_value(self, model, function, loss_list, acc_list):
+        """
+        This is a function for training the value model. 
+        Using Adam optimizer and training in batches (batch size 8)
+
+        :param model:
+        :param function:
+        :param loss_list:
+        :param acc_list:
+        """
         x_train_batches, y_train_batches, x_test, y_test, x_train, y_train = function
         # Optimize: adjust W and b to minimize loss using stochastic gradient descent
         optimizer = torch.optim.Adam(model.parameters(), 0.0001)
 
         for _ in range(200):
             for batch in range(len(x_train_batches)):
-                # print(model.loss(x_train_batches[batch], y_train_batches[batch]))
                 model.loss(x_train_batches[batch], y_train_batches[batch]).backward()  # Compute loss gradients
                 loss_list.append(model.loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
                 optimizer.step()  # Perform optimization by adjusting W and b,
                 optimizer.zero_grad()  # Clear gradients for next step
 
-        # print(f"Loss: {self.model.loss(x_test, y_test)}")
         acc_list.append(model.accuracy(x_test, y_test).cpu().detach())
         print(f"Accuracy: {model.accuracy(x_test, y_test)}")
 
@@ -222,6 +268,7 @@ class MCTSDNN:
         """
         This is a function used to determine if the current player plays with the white or black pieces.
         The black player will always start the game, before the turn alternate between black and white.
+
         :return: BLACK if move count is an even number, and WHITE if the move count is an odd number
         """
         return Type.BLACK if self.move_count % 2 == 0 else Type.WHITE
@@ -252,8 +299,6 @@ class MCTSDNN:
                 print("Round ", rounds)
                 rounds += 1
 
-                self.env.render("terminal")
-
             self.trainingRoundsCompleted += 1
 
             # Iterate the tree and store data
@@ -271,6 +316,8 @@ class MCTSDNN:
             self.env.reset()
             self.R = Node(None, None)
             self.reset()
+
+        # Uncomment if wanting to save training and test data
 
         # np.save(f"models/training_data/model_{len(self.training_data)}_{uuid.uuid4()}.npy", self.training_data,
         # allow_pickle=True)
@@ -298,6 +345,9 @@ class MCTSDNN:
             self.current_node = new_node
 
     def reset(self):
+        """
+        This is a function for reseting MCTS
+        """
         self.move_count = 0
         self.current_node = self.R
         self.R.state = self.env.state()

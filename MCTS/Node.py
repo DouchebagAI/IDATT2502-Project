@@ -7,6 +7,9 @@ class Type(Enum):
 
 class Node:
     def __init__(self, parent, action, v=0, n=0):
+        """
+        A node has an action, value, number of visits, a parent node and children
+        """
         self.action = action
         # The value of the node
         self.v = v

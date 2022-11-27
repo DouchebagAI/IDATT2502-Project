@@ -15,8 +15,13 @@ class GoCNNValue(nn.Module):
         super().__init__()
         self.size = size
         lin = 100 if kernel_size == 5 else 225
-        # Conv
-        # Relu
+        """
+        Creates model with two 2d convd layers
+        Uses MaxPool2d and Relu
+        Flattens, then does two Linear transformations until desired output size (size**2 + 1)
+        Uses RELU and MaxPool2d
+        Uses CUDA if available
+        """
         self.logits = nn.Sequential(
             nn.Conv2d(6, size ** 2, kernel_size=3, padding=2),
             nn.ReLU(),
@@ -33,16 +38,31 @@ class GoCNNValue(nn.Module):
         self.logits.to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
 
     def f(self, x):
+        """
+        :return: output with softmax
+        """
         return self.logits(x)
 
-    # Cross Entropy loss
     def loss(self, x, y):
+        """
+        This is a function for cross entropy loss (CE).
+        A single greatest move.
+
+        :param x: model input
+        :param y: model target
+        :return: loss
+        """
         return nn.functional.l1_loss(self.logits(x), y)
 
 
-    # Accuracy
     def accuracy(self, x, y):
+        """
+        Measures accuracy by checking if model and target y model both round to same int (loss, draw, win)
 
+        :param x: model input
+        :param y: model target
+        :return: accuracy
+        """
         return torch.mean(torch.eq(torch.round(self.f(x).argmax(1).float())
                                         , torch.round(y).float()).float())
-        #return torch.mean(1-torch.abs(torch.sub(self.f(x).argmax(1), y)))
+        

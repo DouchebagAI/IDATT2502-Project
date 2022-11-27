@@ -52,12 +52,20 @@ for i in range(0,100):
             _, _, done, _ = env.step(action)
             
             withTree.opponent_turn_update(action)
-    if env.winner() == 1:
-        noTreeWins += 1
-    elif env.winner() == -1:
-        withTreeWins += 1
+    if i % 2 == 0:
+        if env.winner() == 1:
+            noTreeWins += 1
+        elif env.winner() == -1:
+            withTreeWins += 1
+        else:
+            draws += 1
     else:
-        draws += 1
+        if env.winner() == -1:
+            noTreeWins += 1
+        elif env.winner() == 1:
+            withTreeWins += 1
+        else:
+            draws += 1
 
 
 # Plot the results in a bar graph
