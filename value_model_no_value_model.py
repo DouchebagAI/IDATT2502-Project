@@ -68,7 +68,7 @@ for i in range(0, 100):
     done = False
     while not done:
         start_time = time.time()
-        action = no_val_net.take_turn_2()
+        action = no_val_net.take_turn()
         time_pr_round_no_val.append(time.time() - start_time)
 
         _, _, done, _ = env.step(action)
@@ -79,7 +79,7 @@ for i in range(0, 100):
             break
 
         start_time = time.time()
-        action = val_net.take_turn_2()
+        action = val_net.take_turn()
         time_pr_round_val.append(time.time() - start_time)
 
         _, _, done, _ = env.step(action)

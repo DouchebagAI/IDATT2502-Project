@@ -20,7 +20,7 @@ class GameManager:
         valid = False
         while not self.env.game_ended():
 
-            state, reward, done, info = self.env.step(mcts.take_turn_2)
+            state, reward, done, info = self.env.step(mcts.take_turn)
             while not valid:
                 try:
                     action = self.env.render(mode="human")
@@ -34,7 +34,7 @@ class GameManager:
 
     def test(self, mcts1: MCTSDNN, mcts2: MCTSDNN):
         """
-        This is a function for playing two MCST w/ network against each other
+        This is a function for playing two MCTS w/ network against each other
 
         :param mcts1: One MCTS with the trained network
         :param mcts2: MCTS with the trained network
@@ -45,7 +45,7 @@ class GameManager:
         mcts2.reset()
         done = False
         while not done:
-            action = mcts1.take_turn_2()
+            action = mcts1.take_turn()
             _, _, done, _ = self.env.step(action)
             self.env.render("terminal")
 
@@ -54,7 +54,7 @@ class GameManager:
             if done:
                 break
 
-            action = mcts2.take_turn_2()
+            action = mcts2.take_turn()
             _, _, done, _ = self.env.step(action)
             mcts1.opponent_turn_update(action)
             self.env.render("terminal")
@@ -107,13 +107,13 @@ class GameManager:
         win_dict = dict()
 
         # Playing the tournament
-        print("Playing turnering")
+        print("Playing tournament")
         for i in range(1, num_opponents):
             print(f"Round {i}")
             numberOfWins = 0
             for j in range(30):
                 print(f"Game {i}.{j}")
-                if (j % 2 == 0):
+                if j % 2 == 0:
                     print("Player is BLACK")
                     winner = self.test(players[len(players) - 1], players[i])
                     if winner == 1:

@@ -37,11 +37,11 @@ for i in range(0,100):
             if done:
                 break
             
-            action = withTree.take_turn_2()
+            action = withTree.take_turn()
             _, _, done, _ = env.step(action)
             noTree.opponent_turn_update(action)
         else:
-            action = withTree.take_turn_2()
+            action = withTree.take_turn()
             _, _, done, _ = env.step(action)
             noTree.opponent_turn_update(action)
             

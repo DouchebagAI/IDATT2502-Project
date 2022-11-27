@@ -33,7 +33,7 @@ for i in range(0,1000):
         if done:
             break
         
-        action = mctsdnn.take_turn_2()
+        action = mctsdnn.take_turn()
         _, _, done, _ = env.step(action)
         mcts.opponent_turn_update(action)
     

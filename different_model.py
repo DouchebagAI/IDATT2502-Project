@@ -62,7 +62,7 @@ for i in range(0,100):
     playerGo2.reset() 
     done = False
     while not done:
-        action = playerGo.take_turn_2()
+        action = playerGo.take_turn()
         _, _, done, _ = env.step(action)
         env.render('terminal')
         playerGo2.opponent_turn_update(action)
@@ -70,7 +70,7 @@ for i in range(0,100):
         if done:
             break
         
-        action = playerGo2.take_turn_2()
+        action = playerGo2.take_turn()
         _, _, done, _ = env.step(action)
         env.render('terminal')
         playerGo.opponent_turn_update(action)
