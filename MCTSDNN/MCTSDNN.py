@@ -49,7 +49,7 @@ class MCTSDNN:
 
     def take_turn_play(self):
         """
-        This is a function for choosing the best move with the trained neural network model.
+        This is a function for choosing the best move with only the trained neural network model.
         With a greedy- or a probability policy
 
         :return: action
@@ -169,10 +169,10 @@ class MCTSDNN:
         # print(len(x_train_batches))
         # print(x_train_batches[0])
         y_train_batches = torch.split(y_train, batch)
-        return x_train_batches, y_train_batches, x_test, y_test
+        return x_train_batches, y_train_batches, x_test, y_test, x_train, y_train
 
     def train_model(self, model, function, loss_list, acc_list, mse_loss=True):
-        x_train_batches, y_train_batches, x_test, y_test = function
+        x_train_batches, y_train_batches, x_test, y_test, x_train, y_train = function
         # Optimize: adjust W and b to minimize loss using stochastic gradient descent
         optimizer = torch.optim.Adam(model.parameters(), 0.0001)
 
@@ -182,21 +182,27 @@ class MCTSDNN:
                 if mse_loss:
                     # print(x_train_batches[batch], y_train_batches[batch])
                     model.mse_loss(x_train_batches[batch], y_train_batches[batch]).backward()  # Compute loss gradients
-                    loss_list.append(model.mse_loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
+                    #loss_list.append(model.mse_loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
                 else:
                     model.loss(x_train_batches[batch], y_train_batches[batch]).backward()
-                    loss_list.append(model.loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
+                    #loss_list.append(model.loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
 
                 # print(model.mse_loss(x_train_batches[batch], y_train_batches[batch]).cpu().detach())
 
                 optimizer.step()  # Perform optimization by adjusting W and b,
                 optimizer.zero_grad()  # Clear gradients for next step
+            if mse_loss:
+                # print(x_train_batches[batch], y_train_batches[batch])
+                loss_list.append(model.mse_loss(x_train, y_train).cpu().detach())
+                acc_list.append(model.mse_loss(x_test, y_test).cpu().detach())
+            else:
+                loss_list.append(model.loss(x_train, y_train).cpu().detach())
 
-        acc_list.append(model.mse_acc(x_test, y_test).cpu().detach())
+        #acc_list.append(model.mse_acc(x_test, y_test).cpu().detach())
         print(f"Accuracy: {model.mse_acc(x_test, y_test)}")
 
     def train_model_value(self, model, function, loss_list, acc_list):
-        x_train_batches, y_train_batches, x_test, y_test = function
+        x_train_batches, y_train_batches, x_test, y_test, x_train, y_train = function
         # Optimize: adjust W and b to minimize loss using stochastic gradient descent
         optimizer = torch.optim.Adam(model.parameters(), 0.0001)
 

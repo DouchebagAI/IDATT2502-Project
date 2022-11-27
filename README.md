@@ -1,4 +1,4 @@
-# About
+# 
 An environment for the board game Go. It is implemented using OpenAI's Gym API. 
 It is also optimized to be as efficient as possible in order to efficiently train ML models.
 
